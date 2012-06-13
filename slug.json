@@ -1,0 +1,15 @@
+{
+  "dependencies": [
+    "es5-shimify", 
+    "json2ify", 
+    "jade-runtimeify", 
+    "jqueryify", 
+    "spine",
+    "spine/lib/local",
+    "spine/lib/ajax",
+    "spine/lib/route",
+    "spine/lib/relation",
+    "spine/lib/manager"
+  ],
+  "libs": []
+}

@@ -1,0 +1,19 @@
+.container
+  .row-fluid
+    .span8
+      if this.team == null
+        .page-header
+          .row-fluid
+            .span7.offset1
+              .well
+                fieldset
+                  legend Please select your team
+                  .control-group
+                    label.control-label(for="project-select") Team
+                    .controls
+                      select#project-select
+                        option K Team
+                        option G Unit
+                        option P Team
+
+
