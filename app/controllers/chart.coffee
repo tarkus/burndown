@@ -5,44 +5,75 @@ $ = Spine.$
 
 class Main extends Spine.Controller
   events:
-    'click .add-point': 'addPoint'
-    "change #project-select": "setTeam"
+    'click .btn-preview': 'preview'
+    'click .btn-commit': 'commit'
+    "change .team-select": "setTeam"
+    "keydown #point-input": "changingPoint"
 
   elements:
-    "#project-select": "projectSelect"
+    ".team-select": "teamSelect"
+    "#day-select": "daySelect"
+    ".date-picker": "datePicker"
+    "#point-input": "pointInput"
+    ".chart": "chartGraph"
 
   constructor: ->
     super
     Chart.bind 'create update refresh', @plot
+    Point.bind 'create', @plot
     @getConfig()
     if @config.project?
       @chart = Chart.findByAttribute
         team: @config.team
         sprint: @config.sprint
     else
-      @chart = Chart.create()
+      @chart = new Chart
+      
+    @routes
+      '/on/team/:team': (param) =>
+        @setConfig team: decodeURIComponent(param.team)
 
-  addPoint: ->
-    e.preventDefault()
-
-  plot: =>
-    @render()
+  changingPoint: (e) ->
+    if e.keyCode is 13
+      e.stopPropagation()
+      @commit()
 
   setTeam: (e) ->
-    console.log @projectSelect.val()
+    @setConfig team: @teamSelect.val()
 
   getConfig: ->
     @config =
       team: $.cookie 'team' ? null
       sprint: $.cookie 'sprint' ? null
+      length: 15
 
   setConfig: (options) ->
-    $.cookie 'team', options.team
-    $.cookie 'sprint', options.sprint
+    for name, value of options
+      $.cookie name, value
     @getConfig()
+    @render()
 
-  render: ->
-    return false unless @chart
-    @html require('views/chart')(@chart)
+  commit: (e) ->
+    e.preventDefault()
+    #@chart.save()
+    @plot()
+
+  preview: (e) ->
+    e.preventDefault()
+    point = new Point
+      value: @pointInput.val()
+    @plot()
+
+  render: (view = 'chart') ->
+    return false unless @chart?
+    view = 'config' unless @config.team?
+    @replace require('views/' + view)(chart: @chart, config: @config, teams: @teams)
+    $(".chzn-select").chosen()
+    @datePicker.datePicker()
+    @datePicker.dpSetStartDate(new Date().addDays(-5).asString())
+    @
+
+  plot: ->
+    
     
 module.exports = Main

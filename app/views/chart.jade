@@ -1,19 +1,61 @@
+.navbar.navbar-fixed-top
+  .navbar-inner
+    .container
+      a.btn.btn-navbar(data-toggle="collapse", data-target=".nav-collapse")
+        span.icon-bar
+        span.icon-bar
+        span.icon-bar
+      a.brand(href="/")
+        | TNC Burndown Chart
+      .nav-collapse
+        ul.nav
+          li.dropdown
+            a.dropdown-toggle(data-toggle="dropdown", href="#") 
+              small
+                | for  
+              | #{config.team}
+              b.caret
+            ul.team-list.dropdown-menu
+              for team in teams
+                if team != config.team
+                  li: a(href="#/on/team/#{encodeURIComponent(team)}") #{team}
 .container
-  .row-fluid
-    .span8
-      if this.team == null
-        .page-header
-          .row-fluid
-            .span7.offset1
-              .well
-                fieldset
-                  legend Please select your team
-                  .control-group
-                    label.control-label(for="project-select") Team
-                    .controls
-                      select#project-select
-                        option K Team
-                        option G Unit
-                        option P Team
+  .row
+    .span8.offset1
+      .page-header
+        h3 Today is Day of Sprint #1
+    .span2
+      .page-header.pull-right
+        h3
+          button.btn.btn-success New Sprint
 
+  .row
+    .span10.offset1
+      form.form-inline.well.chart-form
+        fieldset
+          select#day-select.input-medium
+            option(selected="selected") Yesterday
+            - for (var i=1;i<=config.length;i++)
+              - if (i == 1) 
+                option(value=(i)) 1st day
+              - else if (i == 2)
+                option(value=(i)) 2nd day
+              - else if (i == 3)
+                option(value=(i)) 3rd day
+              - else
+                option(value=(i)) #{i}th day
+          a.date-picker(href="#")
+          |  we burnt 
+          input#point-input.input-tiny(type="text")
+          |  point  
+          .chart-actions
+            button.btn.btn-primary.btn-commit(type="submit") Commit
+            |     
+            button.btn.btn-preview.btn-info(type="submit") Preview
+  .row
+    .span10.offset1
+      ul.thumbnails
+        li.span10
+          .thumbnail.chart
+            img(src="http://placehold.it/960x480")
 

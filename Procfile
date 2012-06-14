@@ -1,1 +1,1 @@
-web: serveup ./public
+web: hem build; serveup ./public

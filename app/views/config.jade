@@ -1,0 +1,17 @@
+.container
+  .jumbotron.subhead
+    h1 TNC Burndown Chart
+      .row-fluid
+        .span8
+          .page-header
+            .row-fluid
+              .span7.offset1
+                .well
+                  fieldset
+                    legend Please select your team
+                    .control-group
+                      .controls
+                        select.team-select
+                          for team in teams
+                            option #{team}
+

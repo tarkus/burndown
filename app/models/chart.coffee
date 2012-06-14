@@ -5,5 +5,6 @@ class Chart extends Spine.Model
 
   @extend Spine.Model.Local
   @hasMany 'points', 'point'
+
   
 module.exports = Chart

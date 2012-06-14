@@ -6,4 +6,9 @@ class Point extends Spine.Model
   @extend Spine.Model.Local
   @belongsTo 'chart', 'chart'
   
+  @validate: (atts) ->
+    return true if parseInt(atts.value) < 0
+
+
+  
 module.exports = Point
