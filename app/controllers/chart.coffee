@@ -6,11 +6,7 @@ $ = Spine.$
 
 class Main extends Spine.Controller
   events:
-    'click .btn-preview': 'preview'
-    'click .btn-commit': 'commit'
-    'click .new-sprint-btn': 'newSprint'
-    'click .create-sprint-btn': 'createSprint'
-    'click .cancel-sprint-btn': 'setSprint'
+    "click .create-sprint-btn": "createSprint"
     "change .team-select": "setTeam"
     "keydown #point-input": "changingPoint"
 
@@ -30,42 +26,40 @@ class Main extends Spine.Controller
     super
     Chart.bind 'create', @addChart
     Chart.bind 'update refresh', @plot
-    Sprint.bind 'fetch', @setSprint
     Sprint.bind 'create', @setSprint
     Point.bind 'create', @plot
 
     @getConfig()
-    return @navigate('/team') unless @config.team? and @teams.indexOf(@config.team) != -1
 
     @routes
       '/on/team/:team': (param) =>
-        return @navigate '/team' unless param.team? or param.team is ""
-        @setConfig
-          team: decodeURIComponent(param.team)
-          sprint: -1
+        team = decodeURIComponent(param.team)
+        return @navigate '/team' unless @teams.indexOf(team) != -1
+        @setConfig team: team
         @setSprint()
       '/on/team/:team/sprint/:sprint': (param) =>
-        @setConfig
-          team: decodeURIComponent(param.team)
-          sprint: decodeURIComponent(param.sprint)
-        result = Sprint.select (sprint) =>
-          return true if sprint.team = @config.team and sprint.number = @config.sprint
-        sprint = result.pop() if result.length > 0
+        team = decodeURIComponent(param.team)
+        return @navigate '/team' unless @teams.indexOf(team) != -1
+        @setConfig team: team, sprint: param.sprint
+        @setSprint()
         @render()
       '/on/team/:team/create/sprint': (param) =>
-        @setConfig team: decodeURIComponent(param.team)
+        team = decodeURIComponent(param.team)
+        return @navigate '/team' unless @teams.indexOf(team) != -1
+        @setConfig team: team
         @sprint = null
         @render()
       '/team': =>
         @setConfig
           team: null
           sprint: null
-        @render('select_team')
+        @render()
       '/': =>
+        unless @config.team? and @teams.indexOf(@config.team) != -1
+          return @navigate('/team')
         @navigate '/on/team', encodeURIComponent(@config.team)
 
     Sprint.fetch()
-      
 
   changingPoint: (e) ->
     if e.keyCode is 13
@@ -73,13 +67,8 @@ class Main extends Spine.Controller
       @commit()
 
   setTeam: (e) ->
-    @setConfig
-      team: @teamSelect.val()
-      sprint: -1
+    @setConfig team: @teamSelect.val()
     @setSprint()
-
-  newSprint: =>
-    @navigate '/on/team', encodeURIComponent(@config.team), 'create/sprint'
 
   createSprint: =>
     if @startDateInput.val() is ""
@@ -88,6 +77,7 @@ class Main extends Spine.Controller
       startDate = Date.parse(@startDateInput.val())
     endDate = startDate.add(@config.length)
 
+    console.log "create ", @config.team
     Sprint.create
       team: @config.team
       number: parseInt(@config.sprint) + 1
@@ -103,17 +93,28 @@ class Main extends Spine.Controller
 
     console.log chart
 
-
   setSprint: (sprint) =>
     unless sprint instanceof Sprint
-    unless sprint
-      sprint = Sprint.findByAttribute "team", @config.team
-      if sprint
+      maxNum = 0
+      maxId = 0
+      sprints = Sprint.findAllByAttribute 'team', @config.team
+      for s in sprints
+        if s.number is @config.sprint
+          sprint = s
+          break
+        if s.number > maxNum
+          maxNum = s.number
+          maxId = s.id
+
+      if not sprint? and maxId != 0
+        sprint = Sprint.find maxId
+
+      if sprint?
+        @setConfig sprint: sprint.number
+        @sprint = sprint
         return @navigate '/on/team', encodeURIComponent(sprint.team), 'sprint', sprint.number
-      else
-        return @navigate '/on/team', encodeURIComponent(@config.team), 'create/sprint'
-    @sprint = sprint
-    @navigate '/on/team', @config.team, 'sprint', sprint.number
+
+      return @navigate '/on/team', encodeURIComponent(@config.team), 'create/sprint'
 
   getChart: ->
     return unless @config.sprint?
@@ -133,15 +134,18 @@ class Main extends Spine.Controller
       sprint: @config.sprint
 
   setConfig: (options) ->
+    @config extends options
     for name, value of options
       $.cookie name, value
-    @config = @getConfig()
+    @config.teamEncoded = encodeURIComponent(@config.team)
+    return @getConfig()
 
   getConfig: ->
-    @config =
-      team: decodeURIComponent($.cookie('team')) ? null
-      sprint: $.cookie('sprint') ? 0
-      length: 15
+    unless @config?
+      @config =
+        team: $.cookie('team') ? null
+        sprint: $.cookie('sprint') ? 0
+        length: 15
     @config
 
   preview: (e) ->
@@ -155,22 +159,25 @@ class Main extends Spine.Controller
     #@chart.save()
     @plot()
 
-  render: (view = 'chart') ->
-    view = 'select_team' unless @config.team? and @teams.indexOf(@config.team) != -1
-    @replace require('views/' + view)(
+  render: ->
+    @replace require('views/chart')(
       teams: @teams
       config: @config
       sprint: @sprint
       sprints: @sprints
       chart: @chart
     )
-    $(".chzn-select").chosen()
+
     @daySelect.datePicker()
     @startDateInput.datePicker()
     @startDateInput.bind 'dpClosed', (e, dates) =>
-      d = dates[0].asString()
-      $("#start-date").html(d)
-      @startDateInput.val(d)
+      d = dates[0]
+      if d
+        d = d.asString()
+        $("#start-date").html(d)
+        @startDateInput.val(d)
+
+    @daySelect.chosen()
     @
 
   plot: ->
