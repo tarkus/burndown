@@ -16,7 +16,5 @@ class ChartApp extends Spine.Controller
     @html require('views/layout')
     @
 
-
-
 module.exports = ChartApp
     

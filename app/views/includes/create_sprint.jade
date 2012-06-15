@@ -1,0 +1,14 @@
+.container
+  .row
+    .span8.offset2.sprint-action
+      form.form-horizontal.well
+        fieldset
+          legend 
+            | Create a new sprint start on 
+            span#start-date today
+            input#start-date-input.date-picker(type="hidden")
+            
+      button.btn.btn-xlarge.btn-success.create-sprint-btn Submit 
+      | &nbsp;
+      button.btn.btn-xlarge.btn-info.cancel-sprint-btn Cancel
+
