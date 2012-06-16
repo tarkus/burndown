@@ -12,5 +12,6 @@ require('spine/lib/route')
 require('./date')
 require('./jquery.datePicker')
 require('./jquery.cookie')
-require('./jquery.chosen.min')
+
 require('./bootstrap.min')
+require('./bootstrap-combobox')

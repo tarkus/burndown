@@ -32,26 +32,25 @@ if sprint
 
     .row
       .span10.offset1
-        form.form-inline.well.chart-form
-          fieldset
-            select#day-select.input-medium.date-picker
-              option(selected="selected") Yesterday
-              - for (var i=1;i<=config.length;i++)
-                - if (i == 1) 
-                  option(value=(i)) 1st day
-                - else if (i == 2)
-                  option(value=(i)) 2nd day
-                - else if (i == 3)
-                  option(value=(i)) 3rd day
-                - else
-                  option(value=(i)) #{i}th day
-            |  we burnt 
-            input#point-input.input-tiny(type="text")
-            |  point  
-            .chart-actions
-              a.btn.btn-primary.btn-commit(href="#/commit") Commit
-              |     
-              a.btn.btn-preview.btn-info(href="#/preview") Preview
+        form.form-search.well.chart-form
+          select#day-select.input-medium(data-placeholer="yesterday")
+            option(selected="selected") Yesterday
+            - for (var i=1;i<=config.length;i++)
+              - if (i == 1) 
+                option(value=(i)) 1st day
+              - else if (i == 2)
+                option(value=(i)) 2nd day
+              - else if (i == 3)
+                option(value=(i)) 3rd day
+              - else
+                option(value=(i)) #{i}th day
+          |  we burnt 
+          input#point-input.input-tiny(type="text")
+          |  point  
+          .chart-actions
+            a.btn.btn-primary.btn-commit(href="#/commit") Commit
+            |     
+            a.btn.btn-preview.btn-info(href="#/preview") Preview
     .row
       .span10.offset1
         ul.thumbnails

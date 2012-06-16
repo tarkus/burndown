@@ -77,7 +77,7 @@
     if (this.$container.hasClass('combobox-selected')) {
       this.$element.val('').focus()
       this.clearTarget()
-    } else {
+    // } else {
       if (this.shown) {
         this.hide()
       } else {
@@ -135,6 +135,7 @@
         .on('blur',     $.proxy(this.blur, this))
         .on('keypress', $.proxy(this.keypress, this))
         .on('keyup',    $.proxy(this.keyup, this))
+        .on('click',    $.proxy(this.toggle, this))
 
       if ($.browser.webkit || $.browser.msie) {
         this.$element.on('keydown', $.proxy(this.keypress, this))
@@ -210,7 +211,7 @@
   }
 
   $.fn.combobox.defaults = {
-  template: '<div class="combobox-container"><input type="text" /><span class="add-on btn dropdown-toggle" data-dropdown="dropdown"><span class="caret"/><span class="combobox-clear"><i class="icon-remove"/></span></span></div>'
+  template: '<span class="combobox-container"><input type="text" /><span class="add-on btn dropdown-toggle" data-dropdown="dropdown"><span class="caret"/><span class="combobox-clear"><i class="icon-remove"/></span></span></div>'
   , menu: '<ul class="typeahead typeahead-long dropdown-menu"></ul>'
   , item: '<li><a href="#"></a></li>'
   , placeholder: null

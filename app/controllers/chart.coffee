@@ -168,16 +168,15 @@ class Main extends Spine.Controller
       chart: @chart
     )
 
-    @daySelect.datePicker()
-    @startDateInput.datePicker()
-    @startDateInput.bind 'dpClosed', (e, dates) =>
+    @daySelect.datePicker().bind 'dpClosed', (e, dates) =>
       d = dates[0]
       if d
         d = d.asString()
-        $("#start-date").html(d)
-        @startDateInput.val(d)
-
-    @daySelect.chosen()
+        console.log d
+    @startDateInput.datePicker()
+    @startDateInput.bind 'dpClosed', (e, dates) =>
+      console.log dates
+    @daySelect.combobox()
     @
 
   plot: ->
