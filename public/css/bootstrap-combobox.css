@@ -28,11 +28,11 @@
   border-left-color: #ccc;
 }
 .combobox-container .add-on {
-  float: left;
+  <!-- float: left; -->
   display: block;
   width: auto;
-  min-width: 14px;
-  height: 14px;
+  min-width: 16px;
+  height: 18px;
   margin-right: -1px;
   padding: 4px 5px;
   font-weight: normal;
@@ -52,7 +52,7 @@
 }
 .combobox-container input,
 .combobox-container .uneditable-input {
-  float: left;
+  <!-- float: left; -->
   -webkit-border-radius: 3px 0 0 3px;
   -moz-border-radius: 3px 0 0 3px;
   border-radius: 3px 0 0 3px;

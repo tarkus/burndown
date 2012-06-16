@@ -129,15 +129,4 @@ div.dp-popup td.disabled {
 }
 
 a.dp-choose-date {
-  width: 14px;
-  height: 14px;
-  padding: 0;
-  margin-left: 8px;
-  vertical-align: -13%;
-  display: inline-block;
-  text-indent: -1000px;
-  overflow: hidden;
-  background-image: url("../img/glyphicons-halflings-white.png");
-  background-position:-192px -120px;
-  background-repeat: no-repeat;
 }

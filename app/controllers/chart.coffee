@@ -35,7 +35,7 @@ class Main extends Spine.Controller
       '/on/team/:team': (param) =>
         team = decodeURIComponent(param.team)
         return @navigate '/team' unless @teams.indexOf(team) != -1
-        @setConfig team: team
+        @setConfig team: team, sprint: 0
         @setSprint()
       '/on/team/:team/sprint/:sprint': (param) =>
         team = decodeURIComponent(param.team)
@@ -67,7 +67,7 @@ class Main extends Spine.Controller
       @commit()
 
   setTeam: (e) ->
-    @setConfig team: @teamSelect.val()
+    @setConfig team: @teamSelect.val(), sprint: 0
     @setSprint()
 
   createSprint: =>
@@ -77,7 +77,6 @@ class Main extends Spine.Controller
       startDate = Date.parse(@startDateInput.val())
     endDate = startDate.add(@config.length)
 
-    console.log "create ", @config.team
     Sprint.create
       team: @config.team
       number: parseInt(@config.sprint) + 1
@@ -114,7 +113,7 @@ class Main extends Spine.Controller
         @sprint = sprint
         return @navigate '/on/team', encodeURIComponent(sprint.team), 'sprint', sprint.number
 
-      return @navigate '/on/team', encodeURIComponent(@config.team), 'create/sprint'
+    return @navigate '/on/team', encodeURIComponent(@config.team), 'create/sprint'
 
   getChart: ->
     return unless @config.sprint?
@@ -177,6 +176,7 @@ class Main extends Spine.Controller
     @startDateInput.bind 'dpClosed', (e, dates) =>
       console.log dates
     @daySelect.combobox()
+    @teamSelect.combobox()
     @
 
   plot: ->

@@ -33,7 +33,8 @@ if sprint
     .row
       .span10.offset1
         form.form-search.well.chart-form
-          select#day-select.input-medium(data-placeholer="yesterday")
+          | on 
+          select#day-select.input-medium
             option(selected="selected") Yesterday
             - for (var i=1;i<=config.length;i++)
               - if (i == 1) 
@@ -46,7 +47,7 @@ if sprint
                 option(value=(i)) #{i}th day
           |  we burnt 
           input#point-input.input-tiny(type="text")
-          |  point  
+          |  points
           .chart-actions
             a.btn.btn-primary.btn-commit(href="#/commit") Commit
             |     
