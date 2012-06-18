@@ -8,6 +8,7 @@ class Main extends Spine.Controller
   events:
     "click .create-sprint-btn": "createSprint"
     "change .team-select": "setTeam"
+    "change #day-select": "setDay"
     "keydown #point-input": "changingPoint"
 
   elements:
@@ -22,6 +23,7 @@ class Main extends Spine.Controller
   chart: null
   points: []
   days: []
+  day: null
 
   constructor: ->
     super
@@ -42,6 +44,7 @@ class Main extends Spine.Controller
         team = decodeURIComponent(param.team)
         return @navigate '/team' unless @teams.indexOf(team) != -1
         @setConfig team: team, sprint: param.sprint
+        console.log @config
         @setSprint()
         @getDays()
         @getChart()
@@ -129,19 +132,35 @@ class Main extends Spine.Controller
     thisSecondWed = Date.today().moveToNthOccurrence(3, 2)
     nextSecondWed = Date.today().addMonths(1).moveToNthOccurrence(3, 2)
 
-    Date.prototype.addWeekDays = (amount) ->
-      this.add(3).days()
-      this.add(2).days() if this.is().saturday() or
-        this.is().sunday() or this.is().monday()
-      return this
+    addDays = (date, amount) ->
+      date.add(amount).days()
+      if this.is().saturday()
+        adjustment = 1
+      if this.is().sunday() or this.is().monday()
+        adjustment = 2
+      date.add(adjustment).days()
+      return date
 
     if thisSecondWed.between(startDate, endDate)
-      endDate.addWeekDays(3)
+      addDays(endDate, 3)
 
     if nextSecondWed.between(startDate, endDate)
-      endDate.addWeekDays(3)
+      addDays(endDate, 3)
 
     @sprint.end_at = endDate.asString()
+
+    @sprint.days = []
+    day = startDate.clone()
+    @sprint.days.push day.asString()
+    for i in [0..30]
+      if @sprint.days.length is @config.length
+        break
+      day.add(1).days()
+      if day.is().saturday() or day.is().sunday()
+        continue
+      if day.between(day.clone().moveToNthOccurrence(3, 2), day.clone().moveToNthOccurrence(5, 2))
+        continue
+      @sprint.days.push day.asString()
 
   getChart: ->
     return unless @config.sprint?
@@ -168,12 +187,26 @@ class Main extends Spine.Controller
     @chart.points = points
 
   plot: ->
-    console.log @chart.points
+    #console.log @sprint.days
+    #console.log @chart.points
     
+  setDay: ->
+    if @daySelect.val() is ""
+      if today.is().monday()
+        adjustment = -3
+      else if today.is().sunday()
+        adjustment = -2
+      else
+        adjustment = -1
+      @day = today.clone().add(adjustment).days().asString()
+    else
+      @day = @daySelect.val()
+    console.log @day
+
 
   setConfig: (options) ->
-    @config extends options
     for name, value of options
+      @config[name] = value
       $.cookie name, value
     @config.teamEncoded = encodeURIComponent(@config.team)
     return @getConfig()
@@ -212,6 +245,7 @@ class Main extends Spine.Controller
       chart: @chart
     )
 
+    dayComboSettings = {}
     daySelectSettings =
       addClass: 'datePicker-container dropdown-toggle btn'
       renderCallback: ($td, date, month, year) ->
@@ -221,7 +255,6 @@ class Main extends Spine.Controller
 
         innoDaysBegin = date.clone().moveToNthOccurrence(3, 2)
         innoDaysEnd = date.clone().moveToNthOccurrence(5, 2)
-        console.log innoDaysBegin.asString(), innoDaysEnd.asString()
         if date.between innoDaysBegin, innoDaysEnd
           $td.addClass('innodays')
           $td.addClass('disabled')
@@ -229,20 +262,28 @@ class Main extends Spine.Controller
     if @sprint
       daySelectSettings.startDate = @sprint.started_at
       daySelectSettings.endDate = @sprint.end_at
+      if Date.today().compareTo(Date.parse(@sprint.started_at)) >= 1
+        dayComboSettings.placeholder = "Yesterday"
 
     @daySelect.datePicker(daySelectSettings).bind 'dpClosed', (e, dates) =>
       d = dates[0]
       if d
         d = d.asString()
-        console.log d
+        nth = @sprint.days.indexOf(d) + 1
+        selectedOption = @daySelect.children('option[value=' + nth + ']')
+          .attr('selected', 'selected')
+        $('.combobox-container input[type=text]').val(selectedOption.text())
+
+    @startDateInput.bind 'dpClosed', (e, dates) =>
+      console.log dates
+
+    @daySelect.combobox dayComboSettings
+
+    @teamSelect.combobox()
 
     @startDateInput.datePicker
       addClass: 'datePicker-inline btn'
 
-    @startDateInput.bind 'dpClosed', (e, dates) =>
-      console.log dates
-    @daySelect.combobox()
-    @teamSelect.combobox()
     @
 
 module.exports = Main

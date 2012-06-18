@@ -35,16 +35,18 @@ if sprint
         form.form-search.well.chart-form
           | on 
           select#day-select.input-medium
-            option(selected="selected") Yesterday
-            - for (var i=1;i<=config.length;i++)
-              - if (i == 1) 
-                option(value=(i)) 1st day
-              - else if (i == 2)
-                option(value=(i)) 2nd day
-              - else if (i == 3)
-                option(value=(i)) 3rd day
-              - else
-                option(value=(i)) #{i}th day
+            each day, key in sprint.days 
+              nth = key + 1
+              if nth == 1 
+                nthText = '1st day'
+              else if nth == 2 
+                nthText = '2nd day'
+              else if nth == 3 
+                nthText = '3rd day'
+              else
+                nthText = nth + "th" + " day"
+              separetor = " - "
+              option(value=(nth)) #{nthText}#{separetor}#{day}
           |  we burnt 
           input#point-input.input-tiny(type="text")
           |  points
