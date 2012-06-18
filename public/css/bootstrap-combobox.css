@@ -75,7 +75,7 @@
   *margin-left: -21px;
 }
 .combobox-container select {
-  display: inline-block;
+  display: none;
   width: 0;
   height: 0;
   border: 0;

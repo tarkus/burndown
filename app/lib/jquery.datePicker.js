@@ -237,7 +237,7 @@
 
           if (!alreadyExists && s.createButton) {
             // create it!
-            controller.button = $('<span class="datePicker-container btn dropdown-toggle dp-choose-date"><i class="icon-calendar"></i></span>')
+            controller.button = $('<span class="dp-choose-date"><i class="icon-calendar"></i></span>')
             .bind(
               'click',
               function()
@@ -247,6 +247,9 @@
                 return false;
               }
             );
+            if (s.addClass) {
+              controller.button.addClass(s.addClass);
+            }
             $this.after(controller.button);
           }
 
@@ -547,6 +550,7 @@
     this.ele = ele;
 
     // initial values...
+    this.addClass               =       null;
     this.displayedMonth		=	null;
     this.displayedYear		=	null;
     this.startDate			=	null;
@@ -574,6 +578,7 @@
     {	
       init : function(s)
       {
+        this.addClass = s.addClass;
         this.setStartDate(s.startDate);
         this.setEndDate(s.endDate);
         this.setDisplayedMonth(Number(s.month), Number(s.year));
@@ -799,7 +804,7 @@
             'class'	:	'dp-popup'
           };
           cssRules = {
-            'top'	:	eleOffset.top + c.verticalOffset + 20,
+            'top'	:	eleOffset.top + this.button[0].offsetHeight + c.verticalOffset,
             'left'	:	eleOffset.left + c.horizontalOffset
           };
 

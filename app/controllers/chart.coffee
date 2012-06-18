@@ -21,6 +21,7 @@ class Main extends Spine.Controller
   sprints: []
   chart: null
   points: []
+  days: []
 
   constructor: ->
     super
@@ -42,6 +43,8 @@ class Main extends Spine.Controller
         return @navigate '/team' unless @teams.indexOf(team) != -1
         @setConfig team: team, sprint: param.sprint
         @setSprint()
+        @getDays()
+        @getChart()
         @render()
       '/on/team/:team/create/sprint': (param) =>
         team = decodeURIComponent(param.team)
@@ -96,8 +99,8 @@ class Main extends Spine.Controller
     unless sprint instanceof Sprint
       maxNum = 0
       maxId = 0
-      sprints = Sprint.findAllByAttribute 'team', @config.team
-      for s in sprints
+      @sprints = Sprint.findAllByAttribute 'team', @config.team
+      for s in @sprints
         if s.number is @config.sprint
           sprint = s
           break
@@ -108,29 +111,65 @@ class Main extends Spine.Controller
       if not sprint? and maxId != 0
         sprint = Sprint.find maxId
 
-      if sprint?
-        @setConfig sprint: sprint.number
-        @sprint = sprint
-        return @navigate '/on/team', encodeURIComponent(sprint.team), 'sprint', sprint.number
+    if sprint?
+      @setConfig sprint: sprint.number
+      @sprint = sprint
+      return @navigate '/on/team', encodeURIComponent(sprint.team), 'sprint', sprint.number
 
     return @navigate '/on/team', encodeURIComponent(@config.team), 'create/sprint'
 
+  getDays: ->
+    startDate = Date.parse(@sprint.started_at)
+    endDate = startDate.clone()
+    endDate.addWeeks(3)
+    if endDate.is().monday()
+      endDate.add(-3).days()
+    else
+      endDate.add(-1).days()
+    thisSecondWed = Date.today().moveToNthOccurrence(3, 2)
+    nextSecondWed = Date.today().addMonths(1).moveToNthOccurrence(3, 2)
+
+    Date.prototype.addWeekDays = (amount) ->
+      this.add(3).days()
+      this.add(2).days() if this.is().saturday() or
+        this.is().sunday() or this.is().monday()
+      return this
+
+    if thisSecondWed.between(startDate, endDate)
+      endDate.addWeekDays(3)
+
+    if nextSecondWed.between(startDate, endDate)
+      endDate.addWeekDays(3)
+
+    @sprint.end_at = endDate.asString()
+
   getChart: ->
     return unless @config.sprint?
-    return @chart = chart if chart instanceof Chart
-    @chart = new Chart
-      team: @config.team
-      sprint: @config.sprint
-    @chart
+    chart = null
+    charts = Chart.findAllByAttribute 'team', @config.team
+    for c in charts
+      return @addChart(c) if c.sprint is @config.sprint
+    if not chart?
+      chart = Chart.create
+        team: @config.team
+        sprint: @config.sprint
 
-  addChart: ->
-    @getPoint()
-    @render()
+  addChart: (chart) =>
+    @chart = chart if chart instanceof Chart
+    @getPoints()
+    @plot()
 
   getPoints: ->
-    Point.findAllbyAttribute
-      team: @config.team
-      sprint: @config.sprint
+    points = []
+    allPoints = Point.findAllByAttribute 'team', @config.team
+    for p in allPoints
+      points.push p if p.sprint = @config.sprint
+
+    @chart.points = points
+
+  plot: ->
+    console.log @chart.points
+    
 
   setConfig: (options) ->
     @config extends options
@@ -147,15 +186,21 @@ class Main extends Spine.Controller
         length: 15
     @config
 
-  preview: (e) ->
+  preview: (e) =>
     e.preventDefault()
     point = new Point
+      team: @config.team
+      sprint: @config.sprint
       value: @pointInput.val()
     @plot()
 
-  commit: (e) ->
+  commit: (e) =>
     e.preventDefault()
-    #@chart.save()
+    point = new Point
+      team: @config.team
+      sprint: @config.sprint
+      value: @pointInput.val()
+    @point.save()
     @plot()
 
   render: ->
@@ -167,19 +212,37 @@ class Main extends Spine.Controller
       chart: @chart
     )
 
-    @daySelect.datePicker().bind 'dpClosed', (e, dates) =>
+    daySelectSettings =
+      addClass: 'datePicker-container dropdown-toggle btn'
+      renderCallback: ($td, date, month, year) ->
+        if date.isWeekend()
+          $td.addClass('weekend')
+          $td.addClass('disabled')
+
+        innoDaysBegin = date.clone().moveToNthOccurrence(3, 2)
+        innoDaysEnd = date.clone().moveToNthOccurrence(5, 2)
+        console.log innoDaysBegin.asString(), innoDaysEnd.asString()
+        if date.between innoDaysBegin, innoDaysEnd
+          $td.addClass('innodays')
+          $td.addClass('disabled')
+
+    if @sprint
+      daySelectSettings.startDate = @sprint.started_at
+      daySelectSettings.endDate = @sprint.end_at
+
+    @daySelect.datePicker(daySelectSettings).bind 'dpClosed', (e, dates) =>
       d = dates[0]
       if d
         d = d.asString()
         console.log d
-    @startDateInput.datePicker()
+
+    @startDateInput.datePicker
+      addClass: 'datePicker-inline btn'
+
     @startDateInput.bind 'dpClosed', (e, dates) =>
       console.log dates
     @daySelect.combobox()
     @teamSelect.combobox()
     @
 
-  plot: ->
-    
-    
 module.exports = Main
