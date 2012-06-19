@@ -19,12 +19,24 @@
               for team in teams
                 li: a(href="#/on/team/#{encodeURIComponent(team)}") #{team}
 
+          if sprint
+            li.dropdown
+              a.dropdown-toggle(data-toggle="dropdown", href="#") 
+                | Sprint  
+                |  ##{sprint.number}
+            if sprints.length > 1
+                b.caret
+              ul.team-list.dropdown-menu
+                each s in sprints
+                  li: a(href="#/on/team/#{encodeURIComponent(config.team)}/sprint/#{s.number}") ##{s.number}
+
 if sprint
   .container
     .row
       .span8.offset1
         .page-header
-          h3 Today is Day of Sprint # #{sprint.number}
+          if today
+            h3 Today is #{today} Day of Sprint # #{sprint.number}
       .span2
         .page-header.pull-right
           h3
@@ -58,7 +70,7 @@ if sprint
       .span10.offset1
         ul.thumbnails
           li.span10
-            .thumbnail.chart
-              img(src="http://placehold.it/960x480")
+            .thumbnail#chart
+
 else
   include create_sprint

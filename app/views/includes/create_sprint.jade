@@ -1,12 +1,21 @@
 .container
   .row
     .span8.offset2.sprint-action
-      form.form-horizontal.well
+      form.form-inline.well
         fieldset
-          legend 
-            | Create a new sprint start on 
-            span#start-date today
-            input#start-date-input.date-picker(type="hidden")
+          legend Create a new sprint 
+            
+          .control-group
+            h2 
+              small Start on  
+                span#start-date 
+                  | today
+                input#start-date-input.date-picker(type="hidden")
+
+          .control-group 
+            h2 
+              small Points to burn 
+              input#sprint-point-input.input-tiny
             
       a.btn.btn-xlarge.btn-success.create-sprint-btn(href="#/on/team/#{config.teamEncoded}") Submit 
       | &nbsp;
