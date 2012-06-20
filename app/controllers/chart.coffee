@@ -4,6 +4,46 @@ Sprint = require('models/sprint')
 Point = require('models/point')
 $ = Spine.$
 
+drawBurndown = (el, days, points) ->
+  x = el[0].offsetLeft
+  y = el[0].offsetTop
+  offsetX = 20
+  offsetY = 20
+  width  = el.width() - offsetX * 2
+  height = el.height() - offsetY * 2
+  axisX = []
+  axisY = []
+  axisX.push i for i in [0..days]
+  axisY.push i for i in [6..0]
+  console.log axisY
+  r = Raphael(x, y, el.width(), el.height())
+  chart = r.linechart(20, 20, width, height, [
+    [0, 1, 2, 3, 4, 5]
+    [0, 15]
+    [0, 15]
+  ], [
+    [100, 95, 83, 75, 65]
+    [100, 0]
+    [120, 0]
+  ], {
+    nostroke: false
+    axis: '0 0 1 1'
+    symbol: ['circle', '', 'circle']
+    colors: ['#469bd4', 'gray', 'transparent']
+    dash: ['', '-']
+    #smooth: true
+  }).hoverColumn ()->
+    ###
+    @tags = r.set()
+    for i in [0...y]
+      @tags.push(r.tag(@x, @y[i], @values[i], 160, 10).insertBefore(@).attr([{ fill: "#fff" }, { fill: @symbols[i].attr("fill") }]))
+    ###
+  , () ->
+    @tags and @tags.remove()
+
+  axisItems = chart.axis[0].text.items
+  console.log axisItems
+
 class Main extends Spine.Controller
   events:
     "change .team-select": "setTeam"
@@ -348,20 +388,8 @@ class Main extends Spine.Controller
         $('#start-date').text(d.asString())
 
 
-    if @chartGraph[0]
-      console.dir @chartGraph
-      r = Raphael(@chartGraph[0].offsetLeft, @chartGraph[0].offsetTop, 960, 480)
-      r.linechart(0, 0, 960, 480, [[1, 2, 3, 4, 5, 6, 7],[3.5, 4.5, 5.5, 6.5, 7, 8]], [[12, 32, 23, 15, 17, 27, 22], [10, 20, 30, 25, 15, 28]], {
-        nostroke: false
-        axis: "0 0 1 1"
-        symbol: "circle"
-        smooth: true
-      }).hoverColumn ()->
-        this.tags = r.set()
-        for i in [0...y]
-          this.tags.push(r.tag(this.x, this.y[i], this.values[i], 160, 10).insertBefore(this).attr([{ fill: "#fff" }, { fill: this.symbols[i].attr("fill") }]))
-      , ()->
-        this.tags and this.tags.remove()
+    if @chartGraph[0] and @sprint instanceof Sprint
+      drawBurndown(@chartGraph, @config.length, @sprint.points)
 
     @
 

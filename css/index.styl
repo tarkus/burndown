@@ -3,6 +3,7 @@
 #chart
   width: 960px
   height: 480px
+  background-color: silver
 
 .input-tiny
   width: 40px
@@ -104,3 +105,14 @@
 
 .sprint-action .error
   border-color: darkred
+
+@media print
+  div
+    display: none !important
+  svg
+    position: relative !important
+    margin: 200px auto !important
+    display: block !important
+
+@page 
+  size: landscape !important
