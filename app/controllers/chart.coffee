@@ -4,45 +4,61 @@ Sprint = require('models/sprint')
 Point = require('models/point')
 $ = Spine.$
 
-drawBurndown = (el, days, points) ->
+drawBurndown = (el, days, point, points) ->
   x = el[0].offsetLeft
   y = el[0].offsetTop
+  stepY = 10
+  axisX = []
+  axisY = []
+  pointsX = [0]
+  pointsY = [100]
   offsetX = 20
   offsetY = 20
   width  = el.width() - offsetX * 2
   height = el.height() - offsetY * 2
-  axisX = []
-  axisY = []
-  axisX.push i for i in [0..days]
-  axisY.push i for i in [6..0]
-  console.log axisY
+  dashX = []
+  dashY = []
+  dashX.push i for i in [0..days]
+  dashY.push point * i / days for i in [days..0]
+  axisX.push "Day " + i for i in [1..days]
+  maxY = Math.ceil(point / stepY) + 1
+  axisY.push (i * stepY).toString() for i in [0..maxY]
+
+  #if points.length < 2
+    # Draw dot
+  
+  ###
+  for p in points
+    pointsX.push p.day
+    pointsY.push p.value
+  console.log pointsX, pointsY
+  ###
   r = Raphael(x, y, el.width(), el.height())
   chart = r.linechart(20, 20, width, height, [
-    [0, 1, 2, 3, 4, 5]
-    [0, 15]
+    dashX
+    [0, 1, 2]
     [0, 15]
   ], [
-    [100, 95, 83, 75, 65]
-    [100, 0]
-    [120, 0]
+    dashY
+    [100, 90, 80]
+    [110, 0]
   ], {
     nostroke: false
-    axis: '0 0 1 1'
-    symbol: ['circle', '', 'circle']
-    colors: ['#469bd4', 'gray', 'transparent']
-    dash: ['', '-']
+    axis: '0 0 0 0'
+    symbol: ['circle', 'circle', '']
+    colors: ['gray', 'blue', '']
+    dash: ['', '', '-']
     #smooth: true
-  }).hoverColumn ()->
-    ###
-    @tags = r.set()
-    for i in [0...y]
-      @tags.push(r.tag(@x, @y[i], @values[i], 160, 10).insertBefore(@).attr([{ fill: "#fff" }, { fill: @symbols[i].attr("fill") }]))
-    ###
-  , () ->
-    @tags and @tags.remove()
+  })
+    
+  console.log chart
+  columnSize = Math.round((width - offsetX) / (axisX.length - 1))
+  for i in [1...axisX.length]
+    x = columnSize * i + offsetX
+    r.path 'M' + x + ',' + offsetY * 1.5 + 'L' + x + ',' + (height + offsetX * .5)
 
-  axisItems = chart.axis[0].text.items
-  console.log axisItems
+  Raphael.g.axis offsetX * 1.5, height + offsetY * 0.5, width - offsetX, null, null, axisX.length - 1, 0, axisX, 't', 2, r
+  Raphael.g.axis offsetX * 1.5, height + offsetY * 0.5, height - offsetY, null, null, axisY.length - 1, 1, axisY, 't', 2, r
 
 class Main extends Spine.Controller
   events:
@@ -70,6 +86,7 @@ class Main extends Spine.Controller
   days: []
   today: null
   yesterday: null
+  day: null
 
   constructor: ->
     super
@@ -139,7 +156,7 @@ class Main extends Spine.Controller
       team: @config.team
       number: parseInt(@config.sprint) ? 0
       started_at: startDate.asString()
-      points: parseInt(@sprintPointInput.val())
+      point: parseInt(@sprintPointInput.val())
       end_at: endDate.asString()
 
   addSprint: (sprint) =>
@@ -278,11 +295,13 @@ class Main extends Spine.Controller
       @chart.points.push p if p.sprint = @config.sprint
 
     if @chart.points.length is 0
+      @setDay()
       point =  new Point
         team: @sprint.team
         sprint: @sprint.number
         line: 'sprint'
-        value: @sprint.points
+        value: @sprint.point
+        day: @day or 0
 
       point.chart = @chart
       @chart.points.push point
@@ -293,11 +312,12 @@ class Main extends Spine.Controller
     #console.log @chart.points
     
   setDay:(e) ->
-    e.preventDefault()
-    if @daySelect.val() is ""
+    e.preventDefault() if e
+
+    if not @daySelect.val()?
       @daySelect.val(@yesterday)
-    else
-      @day = @daySelect.val()
+
+    @day = @daySelect.val()
 
 
   setConfig: (options) ->
@@ -317,20 +337,19 @@ class Main extends Spine.Controller
 
   preview: (e) =>
     e.preventDefault()
+    @setDay()
     point = new Point
-      team: @config.team
-      sprint: @config.sprint
+      team: @sprint.team
+      sprint: @sprint.sprint
       value: @pointInput.val()
+      line: 'sprint'
+      day: @day
     @plot()
+    return point
 
   commit: (e) =>
-    e.preventDefault()
-    point = new Point
-      team: @config.team
-      sprint: @config.sprint
-      value: @pointInput.val()
-    @point.save()
-    @plot()
+    point = @preview()
+    point.save()
 
   render: ->
     @replace require('views/chart')(
@@ -388,8 +407,8 @@ class Main extends Spine.Controller
         $('#start-date').text(d.asString())
 
 
-    if @chartGraph[0] and @sprint instanceof Sprint
-      drawBurndown(@chartGraph, @config.length, @sprint.points)
+    if @chartGraph[0] and @chart instanceof Chart
+      drawBurndown(@chartGraph, @config.length, @sprint.point, @chart.points)
 
     @
 

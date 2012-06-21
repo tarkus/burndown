@@ -46,7 +46,7 @@ if sprint
       .span10.offset1
         form.form-search.well.chart-form
           | on 
-          select#day-select.input-medium
+          select#day-select.input-medium(data-placeholder="Yesterday")
             each day, key in sprint.days 
               nth = key + 1
               if nth == 1 
