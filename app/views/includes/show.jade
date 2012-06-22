@@ -47,6 +47,8 @@ if sprint
         form.form-search.well.chart-form
           | on 
           select#day-select.input-medium(data-placeholder="Yesterday")
+            if yesterday
+              option Yesterday
             each day, key in sprint.days 
               nth = key + 1
               if nth == 1 
@@ -61,11 +63,11 @@ if sprint
               option(value=(nth)) #{nthText}#{separetor}#{day}
           |  we burnt 
           input#point-input.input-tiny(type="text")
-          |  points
+          |  hours
           .chart-actions
-            a.btn.btn-primary.btn-commit(href="#/commit") Commit
+            a.btn.btn-primary.btn-commit(href="#") Commit
             |     
-            a.btn.btn-preview.btn-info(href="#/preview") Preview
+            a.btn.btn-preview.btn-info(href="#") Preview
     .row
       .span10.offset1
         ul.thumbnails

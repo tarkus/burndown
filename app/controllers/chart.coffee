@@ -5,60 +5,97 @@ Point = require('models/point')
 $ = Spine.$
 
 drawBurndown = (el, days, point, points) ->
-  x = el[0].offsetLeft
-  y = el[0].offsetTop
   stepY = 10
+  width  = 840
+  height = 360
+  textHeight = 60
+
+  top  = (el.height()- textHeight - height) / 2 + textHeight
+  left = (el.width() - width) / 2
+
   axisX = []
   axisY = []
-  pointsX = [0]
-  pointsY = [100]
-  offsetX = 20
-  offsetY = 20
-  width  = el.width() - offsetX * 2
-  height = el.height() - offsetY * 2
+
+  sprintX = []
+  sprintY = []
+
+  bugfixX = []
+  bugfixY = []
+
   dashX = []
   dashY = []
+
   dashX.push i for i in [0..days]
   dashY.push point * i / days for i in [days..0]
   axisX.push "Day " + i for i in [1..days]
+  axisX.push "Done"
   maxY = Math.ceil(point / stepY) + 1
   axisY.push (i * stepY).toString() for i in [0..maxY]
 
-  #if points.length < 2
-    # Draw dot
-  
-  ###
-  for p in points
-    pointsX.push p.day
-    pointsY.push p.value
-  console.log pointsX, pointsY
-  ###
-  r = Raphael(x, y, el.width(), el.height())
-  chart = r.linechart(20, 20, width, height, [
+  r = Raphael(el[0].offsetLeft, el[0].offsetTop, el.width(), el.height())
+
+  r.text(100, 50, 'G Force Sprint 1 Burndown')
+
+  if points.length >= 2
+    value = point
+    for p in points
+      if p.line is 'sprint'
+        value = value - p.value
+        sprintX.push parseInt(p.day)
+        sprintY.push value
+      if p.line is 'bugfix'
+        bugfixX.push p.day
+        bugfixY.push p.value
+
+    console.log sprintX, sprintY
+
+  chart = r.linechart(left, top, width, height, [
     dashX
-    [0, 1, 2]
-    [0, 15]
+    sprintX
+    bugfixX
+    [0, days]
   ], [
     dashY
-    [100, 90, 80]
-    [110, 0]
+    sprintY
+    bugfixY
+    [maxY * stepY, 0]
   ], {
     nostroke: false
     axis: '0 0 0 0'
-    symbol: ['circle', 'circle', '']
-    colors: ['gray', 'blue', '']
-    dash: ['', '', '-']
+    symbol: ['circle', 'circle', 'squarel', '']
+    colors: ['#4684EE', '#DC3912', '#DC3912', '']
+    dash: ['-', '', '']
+    #gutter: 20
     #smooth: true
   })
-    
-  console.log chart
-  columnSize = Math.round((width - offsetX) / (axisX.length - 1))
-  for i in [1...axisX.length]
-    x = columnSize * i + offsetX
-    r.path 'M' + x + ',' + offsetY * 1.5 + 'L' + x + ',' + (height + offsetX * .5)
 
-  Raphael.g.axis offsetX * 1.5, height + offsetY * 0.5, width - offsetX, null, null, axisX.length - 1, 0, axisX, 't', 2, r
-  Raphael.g.axis offsetX * 1.5, height + offsetY * 0.5, height - offsetY, null, null, axisY.length - 1, 1, axisY, 't', 2, r
+  axisLeft = chart[0][3].attrs.path[0][1]
+  axisTop = chart[0][3].attrs.path[0][2]
+  axisRight = chart[0][3].attrs.path[1][1]
+  axisBottom = chart[0][3].attrs.path[1][2]
+  axisXLength = axisRight - axisLeft
+  axisYLength = axisBottom - axisTop
+
+  X = Raphael.g.axis axisLeft, axisBottom, axisXLength, null, null, axisX.length - 1, 0, axisX, '+', 2, r
+  X.attr stroke: '#E4E4E4'
+
+  Y = Raphael.g.axis axisLeft, axisBottom, axisYLength, null, null, axisY.length - 1, 1, axisY, '+', 2, r
+  Y.attr stroke: '#E4E4E4'
+
+  for p in X.attrs.path[2..] by 2
+    path = 'M' + p[1] + ',' + axisTop + 'V' + axisBottom
+    vpath = r.path path
+    vpath.attr
+      stroke: '#E4E4E4'
+
+  for p, i in Y.attrs.path[4..] by 2
+    path = 'M' + axisLeft + ',' + p[2] + 'H' + axisRight
+    hpath = r.path path
+    hpath.attr
+      stroke: '#E4E4E4'
+
+  chart.toFront()
+
 
 class Main extends Spine.Controller
   events:
@@ -130,7 +167,6 @@ class Main extends Spine.Controller
     Sprint.fetch()
 
   changingPoint: (e) ->
-    e.preventDefault()
     if e.keyCode is 13
       e.stopPropagation()
       @commit()
@@ -283,16 +319,17 @@ class Main extends Spine.Controller
 
   addChart: (chart) =>
     @chart = chart
+    Point.fetch()
     @plot()
 
   plot: (e) =>
-    if e instanceof Event
-      e.preventDefault()
+    console.log "count"
+    e.preventDefault() if e instanceof Event
 
     @chart.points = []
-    allPoints = Point.findAllByAttribute 'team', @config.team
+    allPoints = Point.findAllByAttribute 'team', @chart.team
     for p in allPoints
-      @chart.points.push p if p.sprint = @config.sprint
+      @chart.points.push p if p.sprint is @config.sprint
 
     if @chart.points.length is 0
       @setDay()
@@ -300,21 +337,20 @@ class Main extends Spine.Controller
         team: @sprint.team
         sprint: @sprint.number
         line: 'sprint'
-        value: @sprint.point
+        value: 0
         day: @day or 0
 
       point.chart = @chart
       @chart.points.push point
       point.save()
 
+    @render()
 
-    #console.log @sprint.days
-    #console.log @chart.points
-    
+
   setDay:(e) ->
     e.preventDefault() if e
 
-    if not @daySelect.val()?
+    if not @daySelect.val()? or @daySelect.val() is 'Yesterday'
       @daySelect.val(@yesterday)
 
     @day = @daySelect.val()
@@ -336,11 +372,11 @@ class Main extends Spine.Controller
     @config
 
   preview: (e) =>
-    e.preventDefault()
+    e.preventDefault() if e instanceof Event
     @setDay()
     point = new Point
       team: @sprint.team
-      sprint: @sprint.sprint
+      sprint: @sprint.number
       value: @pointInput.val()
       line: 'sprint'
       day: @day
@@ -348,6 +384,7 @@ class Main extends Spine.Controller
     return point
 
   commit: (e) =>
+    e.preventDefault() if e instanceof Event
     point = @preview()
     point.save()
 
@@ -359,6 +396,7 @@ class Main extends Spine.Controller
       sprints: @sprints
       chart: @chart
       today: @today
+      yesterday: @yesterday
     )
 
     dayComboSettings = {}
@@ -406,10 +444,11 @@ class Main extends Spine.Controller
         @startDateInput.val(d.asString())
         $('#start-date').text(d.asString())
 
-
+    $("svg").addClass('hidden')
     if @chartGraph[0] and @chart instanceof Chart
+      console.log 'loop?'
+      $("svg").removeClass('hidden')
       drawBurndown(@chartGraph, @config.length, @sprint.point, @chart.points)
-
     @
 
 module.exports = Main
