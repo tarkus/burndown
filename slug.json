@@ -11,9 +11,5 @@
     "spine/lib/relation",
     "spine/lib/manager"
   ],
-  "libs": [
-    "./lib/raphael-min.js",
-    "./lib/g.raphael-min.js",
-    "./lib/g.line-min.js"
-  ]
+  "libs": []
 }
