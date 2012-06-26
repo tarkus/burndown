@@ -107,12 +107,12 @@
   border-color: darkred
 
 @media print
-  div
-    display: none !important
+  .navbar,.container,ul
+    display: none
   svg
-    position: relative !important
-    margin: 200px auto !important
-    display: block !important
+    display: block
+    top: 100px !important
+    left: 2% !important
 
 @page 
-  size: landscape !important
+  size: A4 landscape

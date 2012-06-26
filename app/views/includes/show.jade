@@ -24,11 +24,11 @@
               a.dropdown-toggle(data-toggle="dropdown", href="#") 
                 | Sprint  
                 |  ##{sprint.number}
-            if sprints.length > 1
-                b.caret
-              ul.team-list.dropdown-menu
-                each s in sprints
-                  li: a(href="#/on/team/#{encodeURIComponent(config.team)}/sprint/#{s.number}") ##{s.number}
+                if sprints.length > 1
+                  b.caret
+                  ul.team-list.dropdown-menu
+                    each s in sprints
+                      li: a(href="#/on/team/#{encodeURIComponent(config.team)}/sprint/#{s.number}") ##{s.number}
 
 if sprint
   .container
@@ -66,8 +66,6 @@ if sprint
           |  hours
           .chart-actions
             a.btn.btn-primary.btn-commit(href="#") Commit
-            |     
-            a.btn.btn-preview.btn-info(href="#") Preview
     .row
       .span10.offset1
         ul.thumbnails

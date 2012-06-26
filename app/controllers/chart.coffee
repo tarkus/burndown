@@ -4,98 +4,6 @@ Sprint = require('models/sprint')
 Point = require('models/point')
 $ = Spine.$
 
-drawBurndown = (el, days, point, points) ->
-  stepY = 10
-  width  = 840
-  height = 360
-  textHeight = 60
-
-  top  = (el.height()- textHeight - height) / 2 + textHeight
-  left = (el.width() - width) / 2
-
-  axisX = []
-  axisY = []
-
-  sprintX = []
-  sprintY = []
-
-  bugfixX = []
-  bugfixY = []
-
-  dashX = []
-  dashY = []
-
-  dashX.push i for i in [0..days]
-  dashY.push point * i / days for i in [days..0]
-  axisX.push "Day " + i for i in [1..days]
-  axisX.push "Done"
-  maxY = Math.ceil(point / stepY) + 1
-  axisY.push (i * stepY).toString() for i in [0..maxY]
-
-  r = Raphael(el[0].offsetLeft, el[0].offsetTop, el.width(), el.height())
-
-  r.text(100, 50, 'G Force Sprint 1 Burndown')
-
-  if points.length >= 2
-    value = point
-    for p in points
-      if p.line is 'sprint'
-        value = value - p.value
-        sprintX.push parseInt(p.day)
-        sprintY.push value
-      if p.line is 'bugfix'
-        bugfixX.push p.day
-        bugfixY.push p.value
-
-    console.log sprintX, sprintY
-
-  chart = r.linechart(left, top, width, height, [
-    dashX
-    sprintX
-    bugfixX
-    [0, days]
-  ], [
-    dashY
-    sprintY
-    bugfixY
-    [maxY * stepY, 0]
-  ], {
-    nostroke: false
-    axis: '0 0 0 0'
-    symbol: ['circle', 'circle', 'squarel', '']
-    colors: ['#4684EE', '#DC3912', '#DC3912', '']
-    dash: ['-', '', '']
-    #gutter: 20
-    #smooth: true
-  })
-
-  axisLeft = chart[0][3].attrs.path[0][1]
-  axisTop = chart[0][3].attrs.path[0][2]
-  axisRight = chart[0][3].attrs.path[1][1]
-  axisBottom = chart[0][3].attrs.path[1][2]
-  axisXLength = axisRight - axisLeft
-  axisYLength = axisBottom - axisTop
-
-  X = Raphael.g.axis axisLeft, axisBottom, axisXLength, null, null, axisX.length - 1, 0, axisX, '+', 2, r
-  X.attr stroke: '#E4E4E4'
-
-  Y = Raphael.g.axis axisLeft, axisBottom, axisYLength, null, null, axisY.length - 1, 1, axisY, '+', 2, r
-  Y.attr stroke: '#E4E4E4'
-
-  for p in X.attrs.path[2..] by 2
-    path = 'M' + p[1] + ',' + axisTop + 'V' + axisBottom
-    vpath = r.path path
-    vpath.attr
-      stroke: '#E4E4E4'
-
-  for p, i in Y.attrs.path[4..] by 2
-    path = 'M' + axisLeft + ',' + p[2] + 'H' + axisRight
-    hpath = r.path path
-    hpath.attr
-      stroke: '#E4E4E4'
-
-  chart.toFront()
-
 
 class Main extends Spine.Controller
   events:
@@ -127,9 +35,9 @@ class Main extends Spine.Controller
 
   constructor: ->
     super
-    Chart.bind 'create', @addChart
-    Chart.bind 'update refresh', @plot
+    Chart.bind 'create', @setChart
     Sprint.bind 'create', @setSprint
+    Point.bind 'fetch', @getPoints
 
     @getConfig()
 
@@ -137,7 +45,7 @@ class Main extends Spine.Controller
       '/on/team/:team': (param) =>
         team = decodeURIComponent(param.team)
         return @navigate '/team' unless @teams.indexOf(team) != -1
-        @setConfig team: team, sprint: 0
+        @setConfig team: team, sprint: null
         @setSprint()
       '/on/team/:team/sprint/:sprint': (param) =>
         team = decodeURIComponent(param.team)
@@ -165,6 +73,119 @@ class Main extends Spine.Controller
         @navigate '/on/team', encodeURIComponent(@config.team)
 
     Sprint.fetch()
+    Point.fetch()
+
+  drawBurndown: (el, days, point, points) ->
+    stepY = 20
+    width  = 840
+    height = 380
+    textHeight = 50
+
+    top  = (el.height()- textHeight - height) / 2 + textHeight
+    left = (el.width() - width) / 2
+
+    sprintX = []
+    sprintY = []
+
+    bugfixX = []
+    bugfixY = []
+
+    if @r?
+      @r.clear()
+      r = @r
+    else
+      r = Raphael(el[0].offsetLeft, el[0].offsetTop, el.width(), el.height())
+      @r = r
+    r.text(100, 30, 'G Force Sprint 1 Burndown')
+
+    axisX = []
+    axisY = []
+
+    dashX = []
+    dashY = []
+
+    dashX.push i for i in [0..days]
+    dashY.push point * i / days for i in [days..0]
+    axisX.push "Day " + i for i in [1..days]
+    axisX.push "Done"
+    maxY = Math.ceil(point / stepY) + 1
+    axisY.push (i * stepY).toString() for i in [0..maxY]
+    chart = r.linechart(left, top, width, height, [
+      dashX
+      [0, days]
+    ], [
+      dashY
+      [maxY * stepY, 0]
+    ], {
+      nostroke: false
+      axis: '0 0 0 0'
+      symbol: ['circle', '']
+      colors: ['#4684EE', '']
+      dash: ['-', '']
+      #gutter: 20
+      #smooth: true
+    })
+
+    axisLeft = chart.lines[1].attrs.path[0][1]
+    axisTop = chart.lines[1].attrs.path[0][2]
+    axisRight = chart.lines[1].attrs.path[1][1]
+    axisBottom = chart.lines[1].attrs.path[1][2]
+    axisXLength = axisRight - axisLeft
+    axisYLength = axisBottom - axisTop
+
+    X = Raphael.g.axis axisLeft, axisBottom, axisXLength, null, null, axisX.length - 1, 0, axisX, '+', 2, r
+    X.attr stroke: '#E4E4E4'
+
+    Y = Raphael.g.axis axisLeft, axisBottom, axisYLength, null, null, axisY.length - 1, 1, axisY, '+', 2, r
+    Y.attr stroke: '#E4E4E4'
+
+    for p in X.attrs.path[2..] by 2
+      path = 'M' + p[1] + ',' + axisTop + 'V' + axisBottom
+      vpath = r.path path
+      vpath.attr
+        stroke: '#E4E4E4'
+
+    for p, i in Y.attrs.path[4..] by 2
+      path = 'M' + axisLeft + ',' + p[2] + 'H' + axisRight
+      hpath = r.path path
+      hpath.attr
+        stroke: '#E4E4E4'
+
+      chart.toFront()
+      coord =
+        top: axisTop
+        left: axisLeft
+        right: axisRight
+        bottom: axisBottom
+        width: axisXLength
+        height: axisYLength
+        max: maxY * stepY
+
+    @sprintLine.remove() if @sprintLine
+    @circles.remove() if @circles
+    @circles = r.set()
+    path = ""
+    path += chart.lines[0].attrs.path[0].join(',')
+    c = r.circle(chart.lines[0].attrs.path[0][1],
+      chart.lines[0].attrs.path[0][2], 5.5)
+    .attr stroke: '#DC3912', fill: '#DC3912', smooth: true
+    @circles.push c
+    for p, i in points
+      continue if p.day is 0
+      point -= p.value
+      x = chart.lines[0].attrs.path[parseInt(p.day)][1]
+      y = top + ( 1 - point / coord.max ) * coord.height
+      path += ['L', x, y].join(',')
+      c = r.circle(x, y, 5.2).attr stroke: '#DC3912', fill: '#DC3912', smooth: true
+      @circles.push c
+    line = r.path path
+    line.attr
+      stroke: '#DC3912'
+      'stroke-width': '2'
+      'stroke-linecap': 'round'
+      'stroke-linejoin': 'round'
+
+      #@sprintLine.toFront()
 
   changingPoint: (e) ->
     if e.keyCode is 13
@@ -173,7 +194,7 @@ class Main extends Spine.Controller
 
   setTeam: (e) ->
     e.preventDefault()
-    @setConfig team: @teamSelect.val(), sprint: 0
+    @setConfig team: @teamSelect.val(), sprint: null
     @setSprint()
 
   createSprint: (e) =>
@@ -181,34 +202,30 @@ class Main extends Spine.Controller
     if @startDateInput.val() is ""
       startDate = Date.today()
     else
-      startDate = Date.parse(@startDateInput.val())
+      startDate = Date.parseExact(@startDateInput.val(), 'd/M/yyyy')
 
     [startDate, endDate] = @adjustSprintDate(startDate)
     
     unless parseInt(@sprintPointInput.val()) > 0
       return @sprintPointInput.addClass('error')
 
+    @sprints = Sprint.findAllByAttribute 'team', @config.team
+    max = -1
+    for s in @sprints
+      max = s.number if s.number > max
     Sprint.create
       team: @config.team
-      number: parseInt(@config.sprint) ? 0
+      number: max + 1
       started_at: startDate.asString()
       point: parseInt(@sprintPointInput.val())
       end_at: endDate.asString()
 
-  addSprint: (sprint) =>
-    @sprint = sprint
-    console.log Date.compare Date.today(), Date.parse(@sprint.started_at)
-    chart = Chart.findByAttribute
-      team: @sprint.team
-      sprint: @sprint.number
-
-    console.log chart
-
   setSprint: (sprint) =>
+    maxNum = -1
+    maxId = null
     @sprints = Sprint.findAllByAttribute 'team', @config.team
+    @points = []
     unless sprint instanceof Sprint
-      maxNum = 0
-      maxId = 0
       for s in @sprints
         if s.number is parseInt(@config.sprint)
           sprint = s
@@ -217,7 +234,7 @@ class Main extends Spine.Controller
           maxNum = s.number
           maxId = s.id
 
-      if not sprint? and maxId != 0
+      if not sprint? and maxId?
         sprint = Sprint.find maxId
 
     if sprint?
@@ -229,34 +246,29 @@ class Main extends Spine.Controller
 
   adjustSprintDate: (date) ->
     if typeof date is 'string'
-      date = Date.parse(date)
+      date = Date.parseExact(date, 'd/M/yyyy')
 
     if date instanceof Date
       startDate = date.clone()
     else
       return false
 
-
-    if startDate.is().sunday()
-      adjustment = 1
-    else if startDate.is().saturday()
-      adjustment = 2
-
-    if adjustment?
-      startDate.add(adjustment).days()
+    if startDate.is().sunday() or startDate.is().saturday()
+      startDate.moveToDayOfWeek(1)
 
     innoDaysBegin = startDate.clone().moveToNthOccurrence(3, 2)
-    innoDaysEnd = startDate.clone().moveToNthOccurrence(5, 2)
+    innoDaysEnd = innoDaysBegin.clone().addDays(2)
     if startDate.between(innoDaysBegin, innoDaysEnd)
-      startDate.moveToDayOfWeek(0)
+      startDate.moveToDayOfWeek(1)
 
     endDate = startDate.clone()
-    endDate.add(20).days()
-    if endDate.is().sunday() or endDate.is().saturday()
-      adjustment = 2
-      endDate.add(adjustment).days()
-    thisInnoDays = startDate.clone().moveToNthOccurrence(3, 2)
-    nextInnoDays = startDate.clone().addMonths(1).moveToNthOccurrence(3, 2)
+    days = 1
+    while days < @config.length
+      endDate.addDays(1)
+      if endDate.is().saturday()
+        endDate.moveToDayOfWeek(0)
+        continue
+      days += 1
 
     addDays = (adate, amount) ->
       adate.add(amount).days()
@@ -264,11 +276,16 @@ class Main extends Spine.Controller
         adate.add(2).days()
       return adate
 
+    thisInnoDays = startDate.clone().moveToNthOccurrence(3, 2)
+    nextInnoDays = startDate.clone().addMonths(1).moveToNthOccurrence(3, 2)
+
     if thisInnoDays.between(startDate, endDate)
       addDays(endDate, 3)
 
     if nextInnoDays.between(startDate, endDate)
       addDays(endDate, 3)
+
+
 
     return [startDate, endDate]
 
@@ -311,41 +328,57 @@ class Main extends Spine.Controller
     chart = null
     charts = Chart.findAllByAttribute 'team', @config.team
     for c in charts
-      return @addChart(c) if c.sprint is @config.sprint
+      return @setChart(c) if c.sprint is @sprint.number
     if not chart?
       Chart.create
-        team: @config.team
-        sprint: @config.sprint
-
-  addChart: (chart) =>
-    @chart = chart
-    Point.fetch()
-    @plot()
-
-  plot: (e) =>
-    console.log "count"
-    e.preventDefault() if e instanceof Event
-
-    @chart.points = []
-    allPoints = Point.findAllByAttribute 'team', @chart.team
-    for p in allPoints
-      @chart.points.push p if p.sprint is @config.sprint
-
-    if @chart.points.length is 0
-      @setDay()
-      point =  new Point
         team: @sprint.team
         sprint: @sprint.number
+
+  setChart: (chart) =>
+    @chart = chart
+
+  plot: (e) =>
+    e.preventDefault() if e instanceof Event
+    @getPoints()
+    @render()
+
+  getPoints: =>
+    return unless @chart?
+    @points = []
+    allPoints = Point.findAllByAttribute 'team', @chart.team
+    @setDay()
+    point = null
+    for p in allPoints
+      if p.sprint is @chart.sprint
+        point = p if p.day is @day
+        @points.push p
+
+    if @pointInput.val()
+      unless point?
+        point = new Point
+          team: @chart.team
+          sprint: @chart.sprint
+          value: @pointInput.val()
+          line: 'sprint'
+          day: @day
+        @points.push point
+        point.save()
+      else
+        point.value = @pointInput.val()
+        point.save()
+
+    if @points.length > 0
+      @points.sort (a, b) ->
+        return parseInt(a.day) - parseInt(b.day)
+    else
+      point =  new Point
+        team: @chart.team
+        sprint: @chart.sprint
         line: 'sprint'
         value: 0
         day: @day or 0
-
-      point.chart = @chart
-      @chart.points.push point
+      @points.push point
       point.save()
-
-    @render()
-
 
   setDay:(e) ->
     e.preventDefault() if e
@@ -371,22 +404,9 @@ class Main extends Spine.Controller
         length: 15
     @config
 
-  preview: (e) =>
-    e.preventDefault() if e instanceof Event
-    @setDay()
-    point = new Point
-      team: @sprint.team
-      sprint: @sprint.number
-      value: @pointInput.val()
-      line: 'sprint'
-      day: @day
-    @plot()
-    return point
-
   commit: (e) =>
     e.preventDefault() if e instanceof Event
-    point = @preview()
-    point.save()
+    @plot()
 
   render: ->
     @replace require('views/chart')(
@@ -400,25 +420,25 @@ class Main extends Spine.Controller
     )
 
     dayComboSettings = {}
-    skipWeenkendAndInnoDays = ($td, date, month, year) ->
+    skipWeekendAndInnoDays = ($td, date, month, year) ->
       if date.isWeekend()
         $td.addClass('weekend')
         $td.addClass('disabled')
 
       innoDaysBegin = date.clone().moveToNthOccurrence(3, 2)
-      innoDaysEnd = date.clone().moveToNthOccurrence(5, 2)
-      if date.between innoDaysBegin, innoDaysEnd
+      innoDaysEnd = innoDaysBegin.clone().addDays(2)
+      if date.between(innoDaysBegin, innoDaysEnd)
         $td.addClass('innodays')
         $td.addClass('disabled')
 
     daySelectSettings =
       addClass: 'datePicker-container dropdown-toggle btn'
-      renderCallback: skipWeenkendAndInnoDays
+      renderCallback: skipWeekendAndInnoDays
 
     if @sprint
       daySelectSettings.startDate = @sprint.started_at
       daySelectSettings.endDate = @sprint.end_at
-      if Date.today().compareTo(Date.parse(@sprint.started_at)) >= 1
+      if Date.today().compareTo(Date.parseExact(@sprint.started_at, 'd/M/yyyy')) >= 1
         dayComboSettings.placeholder = "Yesterday"
 
     @daySelect.datePicker(daySelectSettings).bind 'dpClosed', (e, dates) =>
@@ -436,7 +456,7 @@ class Main extends Spine.Controller
 
     @startDateInput.datePicker
       addClass: 'datePicker-inline btn'
-      renderCallback: skipWeenkendAndInnoDays
+      renderCallback: skipWeekendAndInnoDays
 
     @startDateInput.bind 'dpClosed', (e, dates) =>
       d = dates[0]
@@ -444,11 +464,10 @@ class Main extends Spine.Controller
         @startDateInput.val(d.asString())
         $('#start-date').text(d.asString())
 
-    $("svg").addClass('hidden')
-    if @chartGraph[0] and @chart instanceof Chart
-      console.log 'loop?'
-      $("svg").removeClass('hidden')
-      drawBurndown(@chartGraph, @config.length, @sprint.point, @chart.points)
+    $("svg").css 'display', 'none'
+    if @chartGraph[0] and @sprint instanceof Sprint
+      $("svg").css 'display', ''
+      @drawBurndown(@chartGraph, @config.length, @sprint.point, @points)
     @
 
 module.exports = Main
