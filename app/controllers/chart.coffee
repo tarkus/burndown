@@ -456,6 +456,7 @@ class Main extends Spine.Controller
 
     @startDateInput.datePicker
       addClass: 'datePicker-inline btn'
+      startDate: '01/01/2000'
       renderCallback: skipWeekendAndInnoDays
 
     @startDateInput.bind 'dpClosed', (e, dates) =>
