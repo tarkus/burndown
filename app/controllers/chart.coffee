@@ -7,6 +7,7 @@ $ = Spine.$
 
 class Main extends Spine.Controller
   events:
+    "change .team-select": "setTeam"
     "change #day-select": "setDay"
     "keydown #point-input": "changingPoint"
     "click .create-sprint-btn": "createSprint"
@@ -75,112 +76,11 @@ class Main extends Spine.Controller
     Sprint.fetch()
     Point.fetch()
 
-  drawBurndown: (el, days, point, points) ->
-    stepY = 20
-    width  = 840
-    height = 380
-    textHeight = 50
+  setTeam: (e) =>
+    e.preventDefault()
+    @setConfig team: @teamSelect.val(), sprint: null
+    @setSprint()
 
-    top  = (el.height()- textHeight - height) / 2 + textHeight
-    left = (el.width() - width) / 2
-
-    sprintX = []
-    sprintY = []
-
-    bugfixX = []
-    bugfixY = []
-
-    r = Raphael('chart', el.width(), el.height())
-    r.text(100, 30, 'G Force Sprint 1 Burndown')
-
-    axisX = []
-    axisY = []
-
-    dashX = []
-    dashY = []
-
-    dashX.push i for i in [0..days]
-    dashY.push point * i / days for i in [days..0]
-    axisX.push "Day " + i for i in [1..days]
-    axisX.push "Done"
-    maxY = Math.ceil(point / stepY) + 1
-    axisY.push (i * stepY).toString() for i in [0..maxY]
-    chart = r.linechart(left, top, width, height, [
-      dashX
-      [0, days]
-    ], [
-      dashY
-      [maxY * stepY, 0]
-    ], {
-      nostroke: false
-      axis: '0 0 0 0'
-      symbol: ['circle', '']
-      colors: ['#4684EE', '']
-      dash: ['-', '']
-      #gutter: 20
-      #smooth: true
-    })
-
-    axisLeft = chart.lines[1].attrs.path[0][1]
-    axisTop = chart.lines[1].attrs.path[0][2]
-    axisRight = chart.lines[1].attrs.path[1][1]
-    axisBottom = chart.lines[1].attrs.path[1][2]
-    axisXLength = axisRight - axisLeft
-    axisYLength = axisBottom - axisTop
-
-    X = Raphael.g.axis axisLeft, axisBottom, axisXLength, null, null, axisX.length - 1, 0, axisX, '+', 2, r
-    X.attr stroke: '#E4E4E4'
-
-    Y = Raphael.g.axis axisLeft, axisBottom, axisYLength, null, null, axisY.length - 1, 1, axisY, '+', 2, r
-    Y.attr stroke: '#E4E4E4'
-
-    for p in X.attrs.path[2..] by 2
-      path = 'M' + p[1] + ',' + axisTop + 'V' + axisBottom
-      vpath = r.path path
-      vpath.attr
-        stroke: '#E4E4E4'
-
-    for p, i in Y.attrs.path[4..] by 2
-      path = 'M' + axisLeft + ',' + p[2] + 'H' + axisRight
-      hpath = r.path path
-      hpath.attr
-        stroke: '#E4E4E4'
-
-      chart.toFront()
-      coord =
-        top: axisTop
-        left: axisLeft
-        right: axisRight
-        bottom: axisBottom
-        width: axisXLength
-        height: axisYLength
-        max: maxY * stepY
-
-    @sprintLine.remove() if @sprintLine
-    @circles.remove() if @circles
-    @circles = r.set()
-    path = ""
-    path += chart.lines[0].attrs.path[0].join(',')
-    c = r.circle(chart.lines[0].attrs.path[0][1],
-      chart.lines[0].attrs.path[0][2], 5.5)
-    .attr stroke: '#DC3912', fill: '#DC3912', smooth: true
-    @circles.push c
-    for p, i in points
-      continue if p.day is 0
-      point -= p.value
-      x = chart.lines[0].attrs.path[parseInt(p.day)][1]
-      y = top + ( 1 - point / coord.max ) * coord.height
-      path += ['L', x, y].join(',')
-      c = r.circle(x, y, 5.2).attr stroke: '#DC3912', fill: '#DC3912', smooth: true
-      @circles.push c
-    line = r.path path
-    line.attr
-      stroke: '#DC3912'
-      'stroke-width': '2'
-      'stroke-linecap': 'round'
-      'stroke-linejoin': 'round'
-
-      #@sprintLine.toFront()
 
   changingPoint: (e) ->
     if e.keyCode is 13
@@ -465,5 +365,113 @@ class Main extends Spine.Controller
       $("svg").css 'display', 'block'
       @drawBurndown(@chartGraph, @config.length, @sprint.point, @points)
     @
+
+  drawBurndown: (el, days, point, points) ->
+    stepY = 20
+    width  = 840
+    height = 380
+    textHeight = 50
+
+    top  = (el.height()- textHeight - height) / 2 + textHeight
+    left = (el.width() - width) / 2
+
+    sprintX = []
+    sprintY = []
+
+    bugfixX = []
+    bugfixY = []
+
+    r = Raphael('chart', el.width(), el.height())
+    r.text(100, 30, 'G Force Sprint 1 Burndown')
+
+    axisX = []
+    axisY = []
+
+    dashX = []
+    dashY = []
+
+    dashX.push i for i in [0..days]
+    dashY.push point * i / days for i in [days..0]
+    axisX.push "Day " + i for i in [1..days]
+    axisX.push "Done"
+    maxY = Math.ceil(point / stepY) + 1
+    axisY.push (i * stepY).toString() for i in [0..maxY]
+    chart = r.linechart(left, top, width, height, [
+      dashX
+      [0, days]
+    ], [
+      dashY
+      [maxY * stepY, 0]
+    ], {
+      nostroke: false
+      axis: '0 0 0 0'
+      symbol: ['circle', '']
+      colors: ['#4684EE', '']
+      dash: ['-', '']
+      #gutter: 20
+      #smooth: true
+    })
+
+    axisLeft = chart.lines[1].attrs.path[0][1]
+    axisTop = chart.lines[1].attrs.path[0][2]
+    axisRight = chart.lines[1].attrs.path[1][1]
+    axisBottom = chart.lines[1].attrs.path[1][2]
+    axisXLength = axisRight - axisLeft
+    axisYLength = axisBottom - axisTop
+
+    X = Raphael.g.axis axisLeft, axisBottom, axisXLength, null, null, axisX.length - 1, 0, axisX, '+', 2, r
+    X.attr stroke: '#E4E4E4'
+
+    Y = Raphael.g.axis axisLeft, axisBottom, axisYLength, null, null, axisY.length - 1, 1, axisY, '+', 2, r
+    Y.attr stroke: '#E4E4E4'
+
+    for p in X.attrs.path[2..] by 2
+      path = 'M' + p[1] + ',' + axisTop + 'V' + axisBottom
+      vpath = r.path path
+      vpath.attr
+        stroke: '#E4E4E4'
+
+    for p, i in Y.attrs.path[4..] by 2
+      path = 'M' + axisLeft + ',' + p[2] + 'H' + axisRight
+      hpath = r.path path
+      hpath.attr
+        stroke: '#E4E4E4'
+
+      chart.toFront()
+      coord =
+        top: axisTop
+        left: axisLeft
+        right: axisRight
+        bottom: axisBottom
+        width: axisXLength
+        height: axisYLength
+        max: maxY * stepY
+
+    @sprintLine.remove() if @sprintLine
+    @circles.remove() if @circles
+    @circles = r.set()
+    path = ""
+    path += chart.lines[0].attrs.path[0].join(',')
+    c = r.circle(chart.lines[0].attrs.path[0][1],
+      chart.lines[0].attrs.path[0][2], 5.5)
+    .attr stroke: '#DC3912', fill: '#DC3912', smooth: true
+    @circles.push c
+    for p, i in points
+      continue if p.day is 0
+      point -= p.value
+      x = chart.lines[0].attrs.path[parseInt(p.day)][1]
+      y = top + ( 1 - point / coord.max ) * coord.height
+      path += ['L', x, y].join(',')
+      c = r.circle(x, y, 5.2).attr stroke: '#DC3912', fill: '#DC3912', smooth: true
+      @circles.push c
+    line = r.path path
+    line.attr
+      stroke: '#DC3912'
+      'stroke-width': '2'
+      'stroke-linecap': 'round'
+      'stroke-linejoin': 'round'
+
+      #@sprintLine.toFront()
+
 
 module.exports = Main
