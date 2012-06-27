@@ -7,7 +7,6 @@ $ = Spine.$
 
 class Main extends Spine.Controller
   events:
-    "change .team-select": "setTeam"
     "change #day-select": "setDay"
     "keydown #point-input": "changingPoint"
     "click .create-sprint-btn": "createSprint"
@@ -48,11 +47,12 @@ class Main extends Spine.Controller
         @setConfig team: team, sprint: null
         @setSprint()
       '/on/team/:team/sprint/:sprint': (param) =>
+        console.log param
         team = decodeURIComponent(param.team)
         return @navigate '/team' unless @teams.indexOf(team) != -1
         @setConfig team: team, sprint: param.sprint
         @setSprint()
-        if @sprint
+        if @sprint?
           @getSprintDays()
           @getChart()
           @render()
@@ -70,7 +70,7 @@ class Main extends Spine.Controller
       '/': =>
         unless @config.team? and @teams.indexOf(@config.team) != -1
           return @navigate('/team')
-        @navigate '/on/team', encodeURIComponent(@config.team)
+        @navigate '/on/team', @config.team
 
     Sprint.fetch()
     Point.fetch()
@@ -90,13 +90,7 @@ class Main extends Spine.Controller
     bugfixX = []
     bugfixY = []
 
-    if @r?
-      @r.clear()
-      r = @r
-    else
-      #r = Raphael(el[0].offsetLeft, el[0].offsetTop, el.width(), el.height())
-      r = Raphael('chart', el.width(), el.height())
-      @r = r
+    r = Raphael('chart', el.width(), el.height())
     r.text(100, 30, 'G Force Sprint 1 Burndown')
 
     axisX = []
@@ -193,11 +187,6 @@ class Main extends Spine.Controller
       e.stopPropagation()
       @commit()
 
-  setTeam: (e) ->
-    e.preventDefault()
-    @setConfig team: @teamSelect.val(), sprint: null
-    @setSprint()
-
   createSprint: (e) =>
     e.preventDefault()
     if @startDateInput.val() is ""
@@ -222,6 +211,7 @@ class Main extends Spine.Controller
       end_at: endDate.asString()
 
   setSprint: (sprint) =>
+    console.log "setSprint with", sprint
     maxNum = -1
     maxId = null
     @sprints = Sprint.findAllByAttribute 'team', @config.team
@@ -239,11 +229,14 @@ class Main extends Spine.Controller
         sprint = Sprint.find maxId
 
     if sprint?
-      @setConfig sprint: sprint.number
       @sprint = sprint
-      return @navigate '/on/team', encodeURIComponent(sprint.team), 'sprint', sprint.number
+      console.log parseInt(@config.sprint), sprint.number, parseInt(@config.sprint) is sprint.number
+      return if parseInt(@config.sprint) is sprint.number
+      @setConfig sprint: sprint.number
+      console.log "redirect"
+      return @navigate '/on/team', sprint.team, 'sprint', sprint.number
 
-    return @navigate '/on/team', encodeURIComponent(@config.team), 'create/sprint'
+    return @navigate '/on/team', @config.team, 'create/sprint'
 
   adjustSprintDate: (date) ->
     if typeof date is 'string'
@@ -467,8 +460,9 @@ class Main extends Spine.Controller
         $('#start-date').text(d.asString())
 
     $("svg").css 'display', 'none'
-    if @chartGraph[0]? and @sprint instanceof Sprint
-      $("svg").css 'display', ''
+    if @chartGraph[0] and @sprint instanceof Sprint
+      console.log "been here once", @chartGraph
+      $("svg").css 'display', 'block'
       @drawBurndown(@chartGraph, @config.length, @sprint.point, @points)
     @
 
