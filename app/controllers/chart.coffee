@@ -94,7 +94,8 @@ class Main extends Spine.Controller
       @r.clear()
       r = @r
     else
-      r = Raphael(el[0].offsetLeft, el[0].offsetTop, el.width(), el.height())
+      #r = Raphael(el[0].offsetLeft, el[0].offsetTop, el.width(), el.height())
+      r = Raphael('chart', el.width(), el.height())
       @r = r
     r.text(100, 30, 'G Force Sprint 1 Burndown')
 
@@ -466,7 +467,7 @@ class Main extends Spine.Controller
         $('#start-date').text(d.asString())
 
     $("svg").css 'display', 'none'
-    if @chartGraph[0] and @sprint instanceof Sprint
+    if @chartGraph[0]? and @sprint instanceof Sprint
       $("svg").css 'display', ''
       @drawBurndown(@chartGraph, @config.length, @sprint.point, @points)
     @
