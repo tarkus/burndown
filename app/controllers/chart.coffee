@@ -75,6 +75,7 @@ class Main extends Spine.Controller
 
     Sprint.fetch()
     Point.fetch()
+    Chart.fetch()
 
   setTeam: (e) =>
     e.preventDefault()
@@ -247,6 +248,8 @@ class Main extends Spine.Controller
         point = p if p.day is @day
         @points.push p
 
+    console.log @points
+
     if @pointInput.val()
       unless point?
         point = new Point
@@ -295,7 +298,7 @@ class Main extends Spine.Controller
       @config =
         team: $.cookie('team') ? null
         sprint: $.cookie('sprint') ? 0
-        length: 15
+        length: 10
     @config
 
   commit: (e) =>
@@ -382,7 +385,7 @@ class Main extends Spine.Controller
     bugfixY = []
 
     r = Raphael('chart', el.width(), el.height())
-    r.text(100, 30, 'G Force Sprint 1 Burndown')
+    r.text(100, 30, 'G Force Sprint #1 Burndown Chart')
 
     axisX = []
     axisY = []
@@ -459,10 +462,17 @@ class Main extends Spine.Controller
     for p, i in points
       continue if p.day is 0
       point -= p.value
+      console.log point
+      console.log coord.max
+      console.log 1 - (point / coord.max)
+      console.log coord.top
+      console.log ( 1 - point / coord.max ) * coord.height
+      console.log coord.top + ( 1 - point / coord.max ) * coord.height
       x = chart.lines[0].attrs.path[parseInt(p.day)][1]
-      y = top + ( 1 - point / coord.max ) * coord.height
+      y = coord.top + ( 1 - point / coord.max ) * coord.height
       path += ['L', x, y].join(',')
-      c = r.circle(x, y, 5.2).attr stroke: '#DC3912', fill: '#DC3912', smooth: true
+      console.log path
+      c = r.circle(x, y, 5.5).attr stroke: '#DC3912', fill: '#DC3912', smooth: true
       @circles.push c
     line = r.path path
     line.attr
@@ -471,7 +481,7 @@ class Main extends Spine.Controller
       'stroke-linecap': 'round'
       'stroke-linejoin': 'round'
 
-      #@sprintLine.toFront()
 
+    window.chart = chart
 
 module.exports = Main

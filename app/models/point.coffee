@@ -12,3 +12,4 @@ class Point extends Spine.Model
 
   
 module.exports = Point
+window.Point = Point

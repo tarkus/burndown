@@ -7,7 +7,7 @@ class ChartApp extends Spine.Controller
   constructor: ->
     super
     @chart = new Chart
-      teams: ['G Unit', 'K Team', 'P Team']
+      teams: ['G Force', 'K Team', 'P Team']
     @append @chart.render()
 
     Spine.Route.setup()
