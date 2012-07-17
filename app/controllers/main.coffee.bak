@@ -2,12 +2,50 @@ Spine = require('spine')
 Chart = require('models/chart')
 Sprint = require('models/sprint')
 Point = require('models/point')
+Config = require('models/config')
 $ = Spine.$
 
 
-class Main extends Spine.Controller
+class TeamSelect extends Spine.Controller
+
   events:
     "change .team-select": "setTeam"
+
+  elements:
+    ".team-select": "teamSelect"
+
+  constructor: ->
+    @render()
+
+  setTeam: (e) =>
+    e.preventDefault()
+    @setConfig team: @teamSelect.val(), sprint: null
+    @setSprint()
+
+  render: =>
+    @replace requrie('views/team_select')
+    @
+
+class Nav extends Spine.Controller
+
+  constructor: ->
+    @render()
+
+  render: =>
+    @replace requrie('views/nav')
+    @
+
+class CreateSprint extends Spine.Controller
+
+  constructor: ->
+    @render()
+
+  render: =>
+    @replace requrie('views/create_sprint')
+    @
+
+class Chart extends Spine.Controller
+  events:
     "change #day-select": "setDay"
     "keydown #point-input": "changingPoint"
     "click .create-sprint-btn": "createSprint"
@@ -17,7 +55,6 @@ class Main extends Spine.Controller
       @createSprint(e) if e.keyCode is 13
 
   elements:
-    ".team-select": "teamSelect"
     "#day-select": "daySelect"
     "#point-input": "pointInput"
     "#sprint-point-input": "sprintPointInput"
@@ -35,58 +72,20 @@ class Main extends Spine.Controller
 
   constructor: ->
     super
+
+    @nav = new Nav
+    @chart = new Chart
+    @createSprint = new CreateSprint
+
     Chart.bind 'create', @setChart
     Sprint.bind 'create', @setSprint
     Point.bind 'fetch', @getPoints
 
     @getConfig()
 
-    @routes
-      '/on/team/:team': (param) =>
-        team = decodeURIComponent(param.team)
-        return @navigate '/team' unless @teams.indexOf(team) != -1
-        @setConfig team: team, sprint: null
-        @setSprint()
-      '/on/team/:team/sprint/:sprint': (param) =>
-        console.log param
-        team = decodeURIComponent(param.team)
-        return @navigate '/team' unless @teams.indexOf(team) != -1
-        @setConfig team: team, sprint: param.sprint
-        @setSprint()
-        if @sprint?
-          @getSprintDays()
-          @getChart()
-          @render()
-      '/on/team/:team/create/sprint': (param) =>
-        team = decodeURIComponent(param.team)
-        return @navigate '/team' unless @teams.indexOf(team) != -1
-        @setConfig team: team
-        @sprint = null
-        @render()
-      '/team': =>
-        @setConfig
-          team: null
-          sprint: null
-        @render()
-      '/': =>
-        unless @config.team? and @teams.indexOf(@config.team) != -1
-          return @navigate('/team')
-        @navigate '/on/team', @config.team
-
     Sprint.fetch()
     Point.fetch()
     Chart.fetch()
-
-  setTeam: (e) =>
-    e.preventDefault()
-    @setConfig team: @teamSelect.val(), sprint: null
-    @setSprint()
-
-
-  changingPoint: (e) ->
-    if e.keyCode is 13
-      e.stopPropagation()
-      @commit()
 
   createSprint: (e) =>
     e.preventDefault()
@@ -180,8 +179,6 @@ class Main extends Spine.Controller
     if nextInnoDays.between(startDate, endDate)
       addDays(endDate, 3)
 
-
-
     return [startDate, endDate]
 
   getSprintDays: ->
@@ -232,10 +229,10 @@ class Main extends Spine.Controller
   setChart: (chart) =>
     @chart = chart
 
-  plot: (e) =>
-    e.preventDefault() if e instanceof Event
-    @getPoints()
-    @render()
+  changingPoint: (e) ->
+    if e.keyCode is 13
+      e.stopPropagation()
+      @commit()
 
   getPoints: =>
     return unless @chart?
@@ -285,25 +282,14 @@ class Main extends Spine.Controller
 
     @day = @daySelect.val()
 
-
-  setConfig: (options) ->
-    for name, value of options
-      @config[name] = value
-      $.cookie name, value
-    @config.teamEncoded = encodeURIComponent(@config.team)
-    return @getConfig()
-
-  getConfig: ->
-    unless @config?
-      @config =
-        team: $.cookie('team') ? null
-        sprint: $.cookie('sprint') ? 0
-        length: 10
-    @config
-
   commit: (e) =>
     e.preventDefault() if e instanceof Event
     @plot()
+
+  plot: (e) =>
+    e.preventDefault() if e instanceof Event
+    @getPoints()
+    @render()
 
   render: ->
     @replace require('views/chart')(
@@ -481,7 +467,13 @@ class Main extends Spine.Controller
       'stroke-linecap': 'round'
       'stroke-linejoin': 'round'
 
-
     window.chart = chart
+
+class Main extends Spine.Stack
+  className: 'main stack'
+
+  controllers:
+    teamSelect: TeamSelect
+    chart: Chart
 
 module.exports = Main

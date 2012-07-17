@@ -1,0 +1,32 @@
+.navbar.navbar-fixed-top
+  .navbar-inner
+    .container
+      a.btn.btn-navbar(data-toggle="collapse", data-target=".nav-collapse")
+        span.icon-bar
+        span.icon-bar
+        span.icon-bar
+      a.brand(href="/")
+        | TNC Burndown Chart
+      .nav-collapse
+        ul.nav
+          li.dropdown
+            a.dropdown-toggle(data-toggle="dropdown", href="#") 
+              small
+                | for  
+              | #{config.team}
+              b.caret
+            ul.team-list.dropdown-menu
+              for team in teams
+                li: a(href="#/on/team/#{team}") #{team}
+
+          if sprint
+            li.dropdown
+              a.dropdown-toggle(data-toggle="dropdown", href="#") 
+                | Sprint  
+                |  ##{sprint.number}
+                if sprints.length > 1
+                  b.caret
+                  ul.team-list.dropdown-menu
+                    each s in sprints
+                      li: a(href="#/on/team/#{encodeURIComponent(config.team)}/sprint/#{s.number}") ##{s.number}
+
