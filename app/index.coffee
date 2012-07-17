@@ -13,7 +13,7 @@ class ChartApp extends Spine.Controller
     @config = if Config.all().length is 0 then new Config else Config.all().pop()
     @teams = ['G Force', 'K Team', 'P Team']
 
-    @main = new Main teams: @teams, config: @config
+    @main = new Main el: $('body'), teams: @teams, config: @config
     @routes
       '/on/team/:team': (param) =>
         team = decodeURIComponent(param.team)
@@ -24,7 +24,7 @@ class ChartApp extends Spine.Controller
         team = decodeURIComponent(param.team)
         return @navigate '/team' unless @teams.indexOf(team) != -1
         @config.updateAttributes team: team, sprint: param.sprint
-        @main.chart.active()
+       @main.chart.active()
       '/on/team/:team/create/sprint': (param) =>
         team = decodeURIComponent(param.team)
         return @navigate '/team' unless @teams.indexOf(team) != -1

@@ -22,8 +22,8 @@ class TeamSelect extends Spine.Controller
 
   setTeam: (e) =>
     e.preventDefault()
-    @setConfig team: @teamSelect.val(), sprint: null
-    @setSprint()
+    @stack.config.updateAttributes team: @teamSelect.val(), sprint: null
+    @navigate '/on/team', @teamSelect.val()
 
   render: ->
     @replace @template teams: @teams
@@ -38,7 +38,10 @@ class Nav extends Spine.Controller
     @render()
 
   render: ->
-    @replace @template config: @config, teams: @teams, sprint: @sprint
+    @replace @template
+      config: @main.config
+      teams: @main.teams
+      sprint: @sprint
     @
 
 class CreateSprint extends Spine.Controller
@@ -49,7 +52,7 @@ class CreateSprint extends Spine.Controller
     @render()
 
   render: =>
-    @replace @template
+    @replace @template config: @stack.config
     @
 
 class Chart extends Spine.Controller
@@ -71,9 +74,8 @@ class Chart extends Spine.Controller
 
   constructor: ->
     super
-    @teams = @options.stack.options.teams
-    @config = @options.stack.options.config
-    @nav = new Nav config: @config, teams: @teams
+    @main = @stack
+    @nav = new Nav main: @stack
 
     @active ->
       console.log 'hi'
