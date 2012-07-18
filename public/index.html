@@ -15,10 +15,12 @@
     var exports = this;
     jQuery(function(){
       var BurndownChartApp = require("index");
-      window.app = new BurndownChartApp({el: $("body")});      
+      window.app = new BurndownChartApp({el: $("#main")});      
     });
   </script>
   
 </head>
-<body></body>
+<body>
+  <div id="main"></div>
+</body>
 </html>

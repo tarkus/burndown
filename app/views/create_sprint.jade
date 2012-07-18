@@ -1,4 +1,6 @@
-.hidden.container
+.nav
+
+.container
   .row
     .span8.offset2.sprint-action
       form.form-inline.well
@@ -8,16 +10,16 @@
           .control-group
             h2 
               small Start on  
-                span#start-date 
+                span.date 
                   | today
-                input#start-date-input.date-picker(type="hidden")
+                input.date-input.date-picker(type="hidden")
 
           .control-group 
             h2 
               small Hours to burn 
-              input#sprint-point-input.input-tiny
+              input.point-input.input-tiny
             
-      a.btn.btn-xlarge.btn-success.create-sprint-btn(href="#/on/team/#{config.teamEncoded}") Submit 
+      a.btn.btn-xlarge.btn-success.create-sprint-btn(href="#/on/team/#{config.team}") Submit 
       | &nbsp;
-      a.btn.btn-xlarge.btn-info.cancel-sprint-btn(href="#/on/team/#{config.teamEncoded}") Cancel
+      a.btn.btn-xlarge.btn-info.cancel-sprint-btn(href="#/on/team/#{config.team}") Cancel
 

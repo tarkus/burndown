@@ -1,45 +1,43 @@
-if sprint
-  .container
-    .row
-      .span8.offset1
-        .page-header
-          if today
-            h3 Today is #{today} Day of Sprint # #{sprint.number}
-      .span2
-        .page-header.pull-right
-          h3
-            a.btn.btn-success.new-sprint-btn(href="#/on/team/#{config.teamEncoded}/create/sprint") New Sprint
+.nav
 
-    .row
-      .span10.offset1
-        form.form-search.well.chart-form
-          | on 
-          select#day-select.input-medium(data-placeholder="Yesterday")
-            if yesterday
-              option Yesterday
-            each day, key in sprint.days 
-              nth = key + 1
-              if nth == 1 
-                nthText = '1st day'
-              else if nth == 2 
-                nthText = '2nd day'
-              else if nth == 3 
-                nthText = '3rd day'
-              else
-                nthText = nth + "th" + " day"
-              separetor = " - "
-              option(value=(nth)) #{nthText}#{separetor}#{day}
-          |  we burnt 
-          input#point-input.input-tiny(type="text")
-          |  hours
-          .chart-actions
-            a.btn.btn-primary.btn-commit(href="#") Commit
-    .row
-      .span10.offset1
-        ul.thumbnails
-          li.span10
-            .thumbnail
-              #chart
+.container
+  .row
+    .span8.offset1
+      .page-header
+        if today
+          h3 Today is #{today} Day of Sprint # #{sprint.number}
+    .span2
+      .page-header.pull-right
+        h3
+          a.btn.btn-success.new-sprint-btn(href="#/on/team/#{config.team}/create/sprint") New Sprint
 
-else
-  include create_sprint
+  .row
+    .span10.offset1
+      form.form-search.well.chart-form
+        | on 
+        select.day-select.input-medium(data-placeholder="Yesterday")
+          if yesterday
+            option Yesterday
+          each day, key in sprint.days 
+            nth = key + 1
+            if nth == 1 
+              nthText = '1st day'
+            else if nth == 2 
+              nthText = '2nd day'
+            else if nth == 3 
+              nthText = '3rd day'
+            else
+              nthText = nth + "th" + " day"
+            separetor = " - "
+            option(value=(nth)) #{nthText}#{separetor}#{day}
+        |  we burnt 
+        input.point-input.input-tiny(type="text")
+        |  hours
+        .chart-actions
+          a.btn.btn-primary.btn-commit(href="#") Commit
+  .row
+    .span10.offset1
+      ul.thumbnails
+        li.span10
+          .thumbnail
+            #chart
