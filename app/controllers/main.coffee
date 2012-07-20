@@ -47,7 +47,6 @@ class CreateSprint extends Spine.Controller
     super
     @active ->
       @render()
-      console.log @el
 
     @template = require('views/create_sprint')
     @nav = new Nav stack: @stack
@@ -66,7 +65,7 @@ class CreateSprint extends Spine.Controller
       return @pointInput.addClass('error')
 
     @sprints = Sprint.findAllByAttribute 'team', @stack.config.team
-    max = -1
+    max = 0
     for s in @sprints
       max = s.number if s.number > max
     sprint = new Sprint
@@ -75,8 +74,9 @@ class CreateSprint extends Spine.Controller
       started_at: startDate.asString()
       point: parseInt(@pointInput.val())
       end_at: endDate.asString()
-    sprint.save =>
+    sprint.bind 'save',  =>
       @navigate '/on/team', encodeURIComponent(sprint.team), 'sprint', sprint.number, trigger: true
+    sprint.save()
 
   render: ->
     @html @template
@@ -100,15 +100,14 @@ class Nav extends Spine.Controller
 
   constructor: ->
     super
-    @sprint = null
-    @sprints = Sprint.findAllByAttribute 'team', @stack.config.team
     @template = require('views/nav')
 
   render: ->
+    @sprints = Sprint.findAllByAttribute 'team', @stack.config.team
     @html @template
       config: @stack.config
       teams: @stack.teams
-      sprint: @sprint
+      sprint: @stack.config.sprint
       sprints: @sprints
     @
 
@@ -116,7 +115,7 @@ class Nav extends Spine.Controller
 class Chart extends Spine.Controller
 
   events:
-    "click .commit": "plot"
+    "click .btn-commit": "plot"
     "keydown .point-input": (e) ->
       @plot() if e.keyCode is 13
 
@@ -139,43 +138,10 @@ class Chart extends Spine.Controller
     @nav = new Nav stack: @stack
 
     @active =>
-      @getSprint()
+      @getSprintDays()
+      @getPoints()
+      @render()
 
-    Point.bind 'refresh', @getPoints
-    Sprint.bind 'refresh', @getSprint
-
-    Point.fetch()
-    Sprint.fetch()
-
-  getSprint: (sprint) =>
-    maxNum = -1
-    maxId = null
-    @points = []
-    unless sprint instanceof Sprint
-      sprint = null
-      sprints = Sprint.findAllByAttribute 'team', @stack.config.team
-      for s in sprints
-        if s.team is @stack.config.team and
-        s.number is parseInt(@stack.config.sprint)
-          sprint = s
-          break
-        if s.number > maxNum
-          maxNum = s.number
-          maxId = s.id
-
-      if not (sprint instanceof Sprint) and maxId?
-        sprint = Sprint.find maxId
-
-    if sprint?
-      @sprint = sprint
-      console.log "setSprint with", sprint
-      @stack.config.updateAttributes sprint: sprint.number
-      if parseInt(@stack.config.sprint) is sprint.number
-        @getSprintDays()
-        return @render()
-      #return @navigate '/on/team', encodeURIComponent(sprint.team), 'sprint', sprint.number, trigger: true
-
-    #return @navigate '/on/team', encodeURIComponent(@stack.config.team), 'create/sprint'
 
   getSprintDays: ->
     @today = null
@@ -216,7 +182,6 @@ class Chart extends Spine.Controller
   getPoints: =>
     point = null
     @points = []
-    return unless @stack.config.team is not ''
     allPoints = Point.findAllByAttribute 'team', @stack.config.team
 
     if not @daySelect.val()? or @daySelect.val() is 'Yesterday'
@@ -228,8 +193,6 @@ class Chart extends Spine.Controller
       if p.sprint is @stack.config.sprint
         point = p if p.day is day
         @points.push p
-
-    console.log @points
 
     if @pointInput.val()
       unless point?
@@ -260,7 +223,7 @@ class Chart extends Spine.Controller
 
   plot: (e) =>
     @getPoints()
-    #@draw(@chartGraph, @stack.options.days, @sprint.point, @points)
+    @draw(@chartGraph, @stack.options.days, @sprint.point, @points)
 
   render: ->
     @html @template
@@ -293,8 +256,9 @@ class Chart extends Spine.Controller
 
     @daySelect.combobox dayComboSettings
 
-
-    #@draw(@chartGraph, @stack.options.days, @sprint.point, @points)
+    setTimeout =>
+      @draw(@chartGraph, @stack.options.days, @sprint.point, @points)
+    , 500
     @
 
   draw: (el, days, point, points) ->
@@ -306,14 +270,8 @@ class Chart extends Spine.Controller
     top  = (el.height()- textHeight - height) / 2 + textHeight
     left = (el.width() - width) / 2
 
-    sprintX = []
-    sprintY = []
-
-    bugfixX = []
-    bugfixY = []
-
     r = Raphael('chart', el.width(), el.height())
-    r.text(100, 30, 'G Force Sprint #1 Burndown Chart')
+    r.text(100, 30, @stack.config.team + ' Sprint #' + @stack.config.sprint + ' Burndown Chart')
 
     axisX = []
     axisY = []
@@ -321,17 +279,18 @@ class Chart extends Spine.Controller
     dashX = []
     dashY = []
 
+    maxY = Math.ceil(point / stepY) + 1
+
     dashX.push i for i in [0..days]
     dashY.push point * i / days for i in [days..0]
     axisX.push "Day " + i for i in [1..days]
     axisX.push "Done"
-    maxY = Math.ceil(point / stepY) + 1
     axisY.push (i * stepY).toString() for i in [0..maxY]
     chart = r.linechart(left, top, width, height, [
-      dashX
-      [0, days]
+      dashX,
+      [0, 10]
     ], [
-      dashY
+      dashY,
       [maxY * stepY, 0]
     ], {
       nostroke: false
@@ -339,8 +298,6 @@ class Chart extends Spine.Controller
       symbol: ['circle', '']
       colors: ['#4684EE', '']
       dash: ['-', '']
-      #gutter: 20
-      #smooth: true
     })
 
     axisLeft = chart.lines[1].attrs.path[0][1]
@@ -368,15 +325,15 @@ class Chart extends Spine.Controller
       hpath.attr
         stroke: '#E4E4E4'
 
-      chart.toFront()
-      coord =
-        top: axisTop
-        left: axisLeft
-        right: axisRight
-        bottom: axisBottom
-        width: axisXLength
-        height: axisYLength
-        max: maxY * stepY
+    chart.toFront()
+    coord =
+      top: axisTop
+      left: axisLeft
+      right: axisRight
+      bottom: axisBottom
+      width: axisXLength
+      height: axisYLength
+      max: maxY * stepY
 
     @sprintLine.remove() if @sprintLine
     @circles.remove() if @circles
@@ -390,16 +347,9 @@ class Chart extends Spine.Controller
     for p, i in points
       continue if p.day is 0
       point -= p.value
-      console.log point
-      console.log coord.max
-      console.log 1 - (point / coord.max)
-      console.log coord.top
-      console.log ( 1 - point / coord.max ) * coord.height
-      console.log coord.top + ( 1 - point / coord.max ) * coord.height
       x = chart.lines[0].attrs.path[parseInt(p.day)][1]
       y = coord.top + ( 1 - point / coord.max ) * coord.height
       path += ['L', x, y].join(',')
-      console.log path
       c = r.circle(x, y, 5.5).attr stroke: '#DC3912', fill: '#DC3912', smooth: true
       @circles.push c
     line = r.path path
@@ -408,9 +358,6 @@ class Chart extends Spine.Controller
       'stroke-width': '2'
       'stroke-linecap': 'round'
       'stroke-linejoin': 'round'
-
-    window.chart = chart
-
 
 class Main extends Spine.Stack
   className: 'main stack'

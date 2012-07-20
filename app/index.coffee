@@ -3,6 +3,8 @@ require 'lib/setup'
 Spine  = require 'spine'
 Main   = require 'controllers/main'
 Config = require 'models/config'
+Sprint = require 'models/sprint'
+Point  = require 'models/point'
 
 Spine.Controller.include
   activate: ->
@@ -17,6 +19,9 @@ class ChartApp extends Spine.Controller
   constructor: ->
     super
     Config.fetch()
+    Point.fetch()
+    Sprint.fetch()
+
     @config = if Config.all().length is 0 then new Config else Config.all().pop()
     @teams = ['G Force', 'K Team', 'P Team']
     @days = 10
@@ -26,21 +31,43 @@ class ChartApp extends Spine.Controller
         team = decodeURIComponent(param.team)
         return @navigate '/team' unless @teams.indexOf(team) != -1
         @config.updateAttributes team: team, sprint: null
-        @main.chart.getSprint()
-        if @main.chart.sprint?
-          @config.updateAttributes sprint: @main.chart.sprint.number
+        maxId = null
+        maxNum = -1
+        sprints = Sprint.findAllByAttribute 'team', @config.team
+        for s in sprints
+          if s.number > maxNum
+            maxNum = s.number
+            maxId = s.id
+        if maxId?
+          sprint = Sprint.find maxId
+          @config.updateAttributes sprint: sprint.number
           @navigate '/on/team', @config.team, 'sprint', @config.sprint
         else
           @navigate '/on/team', @config.team, 'create/sprint'
       '/on/team/:team/sprint/:sprint': (param) =>
         team = decodeURIComponent(param.team)
         return @navigate '/team' unless @teams.indexOf(team) != -1
-        @config.updateAttributes team: team, sprint: param.sprint
-        @main.chart.active()
+        @main.chart.sprint = null
+        sprint = null
+        sprints = Sprint.findAllByAttribute 'team', @config.team
+        for s in sprints
+          if s.team is @config.team and
+          s.number is parseInt(param.sprint)
+            sprint = s
+            break
+          if s.number > maxNum
+            maxNum = s.number
+            maxId = s.id
+        if sprint?
+          @main.chart.sprint = sprint
+          @config.updateAttributes team: team, sprint: param.sprint
+          @main.chart.active()
+        else
+          @navigate '/on/team', @config.team, 'create/sprint'
       '/on/team/:team/create/sprint': (param) =>
         team = decodeURIComponent(param.team)
         return @navigate '/team' unless @teams.indexOf(team) != -1
-        @config.updateAttributes team: team
+        @config.updateAttributes team: team, sprint: null
         @main.createSprint.active()
       '/team': =>
         console.log '1'
