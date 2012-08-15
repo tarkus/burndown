@@ -70,9 +70,12 @@ class ChartApp extends Spine.Controller
         @config.updateAttributes team: team, sprint: null
         @main.createSprint.active()
       '/team': =>
-        console.log '1'
         @config.updateAttributes team: null, sprint: null
         @main.teamSelect.active()
+      '/hours_estimate': =>
+        unless @config.team? and @teams.indexOf(@config.team) != -1
+          return @navigate('/team')
+        @main.hourEstimate.active()
       '/': =>
         unless @config.team? and @teams.indexOf(@config.team) != -1
           return @navigate('/team')
